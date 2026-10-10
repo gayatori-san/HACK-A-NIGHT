@@ -2,12 +2,16 @@ package com.example.ui.screens
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
+import android.net.Uri
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import org.json.JSONObject
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -84,11 +88,29 @@ import com.example.viewmodel.WalletUiState
 import kotlin.math.roundToInt
 
 class AndroidRunwayBridge(
-    private val onApplyRescue: () -> Unit
+    private val onApplyRescue: () -> Unit,
+    private val onPickFile: () -> Unit,
+    private val onImportDemo: (String) -> Unit,
+    private val onImportCsv: (String) -> Unit
 ) {
     @JavascriptInterface
     fun onApplyRescuePlan() {
         onApplyRescue()
+    }
+
+    @JavascriptInterface
+    fun pickFile() {
+        onPickFile()
+    }
+
+    @JavascriptInterface
+    fun importDemoStatement(bank: String) {
+        onImportDemo(bank)
+    }
+
+    @JavascriptInterface
+    fun importCsvContent(csv: String) {
+        onImportCsv(csv)
     }
 }
 
@@ -97,8 +119,27 @@ fun RunwayScreen(
     uiState: WalletUiState,
     onBack: () -> Unit,
     onApplyRescuePlan: () -> Unit,
+    onImportDemoStatement: (String) -> Unit = {},
+    onImportCsv: (String) -> Unit = {},
+    onDismissStatementReport: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            try {
+                val content = context.contentResolver.openInputStream(it)?.bufferedReader()?.use { reader ->
+                    reader.readText()
+                }
+                if (!content.isNullOrBlank()) {
+                    onImportCsv(content)
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
     // Mode toggle: 0 = "HTML XAI Studio", 1 = "Native XAI & Runway"
     var viewMode by remember { mutableStateOf(0) }
 
@@ -252,12 +293,18 @@ fun RunwayScreen(
                 RunwayHtmlWebView(
                     uiState = uiState,
                     onApplyRescuePlan = onApplyRescuePlan,
+                    onPickFile = { filePickerLauncher.launch("*/*") },
+                    onImportDemoStatement = onImportDemoStatement,
+                    onImportCsv = onImportCsv,
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
                 RunwayNativeDashboard(
                     uiState = uiState,
                     onApplyRescuePlan = onApplyRescuePlan,
+                    onPickFile = { filePickerLauncher.launch("*/*") },
+                    onImportDemoStatement = onImportDemoStatement,
+                    onImportCsv = onImportCsv,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -270,10 +317,30 @@ fun RunwayScreen(
 fun RunwayHtmlWebView(
     uiState: WalletUiState,
     onApplyRescuePlan: () -> Unit,
+    onPickFile: () -> Unit,
+    onImportDemoStatement: (String) -> Unit,
+    onImportCsv: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isLoading by remember { mutableStateOf(true) }
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
+
+    fun buildReportJson(): String {
+        return uiState.statementReport?.let { report ->
+            JSONObject().apply {
+                put("title", report.title)
+                put("bankruptcyRiskPercent", report.bankruptcyRiskPercent)
+                put("daysRemaining", report.daysRemaining)
+                put("funnyRoast", report.funnyRoast)
+                put("psychologicalNudge", report.psychologicalNudge)
+                put("totalWastedOnImpulse", report.totalWastedOnImpulse)
+                put("projectedDividendsYearly", report.projectedDividendsYearly)
+                put("projectedWealth5Yrs", report.projectedWealth5Yrs)
+                put("topLeakageCategory", report.topLeakageCategory)
+                put("monthlyBurn", report.monthlyBurn)
+            }.toString()
+        } ?: "{}"
+    }
 
     Box(modifier = modifier) {
         AndroidView(
@@ -292,7 +359,12 @@ fun RunwayHtmlWebView(
 
                     // Add JavaScript Interface for Two-Way Bridge
                     addJavascriptInterface(
-                        AndroidRunwayBridge(onApplyRescuePlan),
+                        AndroidRunwayBridge(
+                            onApplyRescue = onApplyRescuePlan,
+                            onPickFile = onPickFile,
+                            onImportDemo = onImportDemoStatement,
+                            onImportCsv = onImportCsv
+                        ),
                         "AndroidBridge"
                     )
 
@@ -304,11 +376,18 @@ fun RunwayHtmlWebView(
 
                         override fun onPageFinished(view: WebView?, url: String?) {
                             isLoading = false
+                            val reportJson = buildReportJson()
                             // Feed latest live telemetry from Kotlin StateFlow
                             view?.evaluateJavascript(
-                                "if (typeof updateDataFromAndroid === 'function') { updateDataFromAndroid(${uiState.balance}, ${uiState.totalSpent}, ${uiState.userData.allowance}); }",
+                                "if (typeof updateDataFromAndroid === 'function') { updateDataFromAndroid(${uiState.balance}, ${uiState.totalSpent}, ${uiState.userData.allowance}, ${uiState.runwayDays}, ${uiState.statementReport?.bankruptcyRiskPercent ?: 78}, $reportJson); }",
                                 null
                             )
+                            if (uiState.showStatementReportPopup && uiState.statementReport != null) {
+                                view?.evaluateJavascript(
+                                    "if (typeof triggerStatementReport === 'function') { triggerStatementReport($reportJson); }",
+                                    null
+                                )
+                            }
                         }
                     }
 
@@ -317,10 +396,17 @@ fun RunwayHtmlWebView(
                 }
             },
             update = { webView ->
+                val reportJson = buildReportJson()
                 webView.evaluateJavascript(
-                    "if (typeof updateDataFromAndroid === 'function') { updateDataFromAndroid(${uiState.balance}, ${uiState.totalSpent}, ${uiState.userData.allowance}); }",
+                    "if (typeof updateDataFromAndroid === 'function') { updateDataFromAndroid(${uiState.balance}, ${uiState.totalSpent}, ${uiState.userData.allowance}, ${uiState.runwayDays}, ${uiState.statementReport?.bankruptcyRiskPercent ?: 78}, $reportJson); }",
                     null
                 )
+                if (uiState.showStatementReportPopup && uiState.statementReport != null) {
+                    webView.evaluateJavascript(
+                        "if (typeof triggerStatementReport === 'function') { triggerStatementReport($reportJson); }",
+                        null
+                    )
+                }
             }
         )
 
@@ -351,6 +437,9 @@ fun RunwayHtmlWebView(
 fun RunwayNativeDashboard(
     uiState: WalletUiState,
     onApplyRescuePlan: () -> Unit,
+    onPickFile: () -> Unit = {},
+    onImportDemoStatement: (String) -> Unit = {},
+    onImportCsv: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var cutImpulseSlider by remember { mutableFloatStateOf(20f) }
@@ -373,6 +462,97 @@ fun RunwayNativeDashboard(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        // 0. Statement Ingestion & AI Training Card
+        item {
+            GlassCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                backgroundColor = Color(0x3528144E),
+                borderBrush = Brush.linearGradient(
+                    listOf(PhonePeLightPurple, Color(0x6000D09C))
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "📂", fontSize = 16.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Statement Ingestion & AI Training",
+                                fontFamily = HelveticaFontFamily,
+                                color = Color.White,
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        GlassBadge(
+                            text = "CSV / EXCEL",
+                            textColor = NeonLime,
+                            borderColor = NeonLime.copy(alpha = 0.5f),
+                            backgroundColor = NeonLime.copy(alpha = 0.15f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Import transactions to train Gemini on your spending patterns, analyze bankruptcy velocity, and calculate lost compound dividends.",
+                        fontFamily = HelveticaFontFamily,
+                        color = TextSecondary,
+                        fontSize = 11.5.sp,
+                        lineHeight = 15.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Buttons Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1.2f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Brush.horizontalGradient(listOf(PhonePeLightPurple, PhonePePurple)))
+                                .clickable { onPickFile() }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "📁 Browse Device File",
+                                color = Color.White,
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFF281845))
+                                .border(1.dp, Color(0x608B5CF6), RoundedCornerShape(12.dp))
+                                .clickable { onImportDemoStatement("PhonePe UPI") }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "📱 PhonePe Demo",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         // 1. Hero Projected Runway Gauge Card
         item {
             GlassCard(

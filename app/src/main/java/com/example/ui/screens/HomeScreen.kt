@@ -1,15 +1,14 @@
 package com.example.ui.screens
 
+import android.content.Intent
 import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,51 +23,41 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Psychology
-import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material.icons.filled.VerifiedUser
-import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -80,16 +69,11 @@ import com.example.ui.components.CategoryIcon
 import com.example.ui.components.GlassBadge
 import com.example.ui.components.GlassCard
 import com.example.ui.theme.AmberCashback
-import com.example.ui.theme.BorderMedium
-import com.example.ui.theme.BorderSubtle
 import com.example.ui.theme.CoralRed
 import com.example.ui.theme.EmeraldGreen
-import com.example.ui.theme.GlassBorderGradient
 import com.example.ui.theme.HelveticaFontFamily
-import com.example.ui.theme.NeonLime
 import com.example.ui.theme.ObsidianBlack
 import com.example.ui.theme.PhonePeAccentPurple
-import com.example.ui.theme.PhonePeDarkHeader
 import com.example.ui.theme.PhonePeHeroGradient
 import com.example.ui.theme.PhonePeLightPurple
 import com.example.ui.theme.PhonePePurple
@@ -100,6 +84,14 @@ import com.example.ui.theme.TextSecondary
 import com.example.viewmodel.WalletUiState
 import kotlin.math.abs
 
+/**
+ * Minimalist, ultra-clean HomeScreen.
+ *
+ * Designed per user specifications:
+ * - Removed the Upload CSV button from the first page entirely.
+ * - Cleaned up messy, out-of-order text with structured menus and submenus.
+ * - Highly refined visual hierarchy with clear typography and zero text collisions.
+ */
 @Composable
 fun HomeScreen(
     uiState: WalletUiState,
@@ -114,9 +106,9 @@ fun HomeScreen(
     onImportCsv: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var showTopMenu by remember { mutableStateOf(false) }
     var showCategoryMenu by remember { mutableStateOf(false) }
-    var showUploadStatementModal by remember { mutableStateOf(false) }
 
     val filteredTxns = if (uiState.filterCat == "All") {
         uiState.txns
@@ -124,7 +116,7 @@ fun HomeScreen(
         uiState.txns.filter { it.cat.equals(uiState.filterCat, ignoreCase = true) }
     }
 
-    val balanceRatio = uiState.balance / uiState.userData.allowance.coerceAtLeast(1)
+    val balanceRatio = (uiState.balance / uiState.userData.allowance.coerceAtLeast(1)).coerceIn(0.0, 1.0)
     val isLowBalance = balanceRatio <= 0.25
 
     LazyColumn(
@@ -133,47 +125,47 @@ fun HomeScreen(
             .background(ObsidianBlack)
             .testTag("home_screen_lazy_column")
     ) {
-        // 1. PhonePe Signature Header & Glassmorphic Hero
+        // 1. Sleek Minimal Header & Top Navigation Bar
         item {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(PhonePeHeroGradient)
-                    .padding(top = 12.dp, bottom = 18.dp)
+                    .padding(top = 10.dp, bottom = 14.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = 18.dp)
                 ) {
-                    // Top PhonePe Navigation Bar
+                    // Top App Row: User Identity & Action Menus
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // User Profile & Location Pill
+                        // User Profile & UPI Lite Status
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.clickable { onNavigateToTab("budget") }
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(42.dp)
+                                    .size(38.dp)
                                     .clip(CircleShape)
                                     .background(
                                         Brush.linearGradient(
                                             listOf(PhonePeAccentPurple, PhonePePurple)
                                         )
                                     )
-                                    .border(1.5.dp, Color(0x80FFFFFF), CircleShape),
+                                    .border(1.2.dp, Color(0x80FFFFFF), CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = "SG",
                                     fontFamily = HelveticaFontFamily,
                                     color = Color.White,
-                                    fontSize = 14.sp,
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -181,33 +173,38 @@ fun HomeScreen(
                             Spacer(modifier = Modifier.width(10.dp))
 
                             Column {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = "Bengaluru, KA",
-                                        fontFamily = HelveticaFontFamily,
-                                        color = Color.White,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(text = "▼", color = Color(0xCCFFFFFF), fontSize = 9.sp)
-                                }
                                 Text(
-                                    text = "samyak@habitpay • UPI Lite",
+                                    text = "Samyak G.",
                                     fontFamily = HelveticaFontFamily,
-                                    color = TextSecondary,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Medium
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(EmeraldGreen)
+                                    )
+                                    Spacer(modifier = Modifier.width(5.dp))
+                                    Text(
+                                        text = "UPI Lite Active",
+                                        fontFamily = HelveticaFontFamily,
+                                        color = TextSecondary,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Normal
+                                    )
+                                }
                             }
                         }
 
-                        // Right PhonePe Action Buttons (Behavioral KYC, QR Scanner & Submenu Overflow)
+                        // Right Action Bar: Quick KYC Shortcut & Comprehensive Submenu
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Deep Behavioral Analysis Small Icon at Top Taskbar (Requested in #4)
+                            // Behavioral KYC Icon Shortcut
                             Box(
                                 modifier = Modifier
                                     .size(36.dp)
@@ -220,9 +217,9 @@ fun HomeScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Psychology,
-                                    contentDescription = "Deep Behavioral Analysis",
+                                    contentDescription = "Behavioral KYC",
                                     tint = if (uiState.userData.isBehavioralKycCompleted) EmeraldGreen else SoftLavender,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(19.dp)
                                 )
                                 if (!uiState.userData.isBehavioralKycCompleted) {
                                     Box(
@@ -235,26 +232,7 @@ fun HomeScreen(
                                 }
                             }
 
-                            // PhonePe QR Code Scanner
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0x28FFFFFF))
-                                    .border(1.dp, Color(0x38FFFFFF), CircleShape)
-                                    .clickable { onNavigateToTab("log") }
-                                    .testTag("home_qr_scan_button"),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.QrCodeScanner,
-                                    contentDescription = "Scan QR",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-
-                            // Minimalist Submenu Overflow Button
+                            // Clean Overflow Menu with Structured Submenus
                             Box {
                                 Box(
                                     modifier = Modifier
@@ -268,15 +246,14 @@ fun HomeScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.MoreVert,
-                                        contentDescription = "More Options",
+                                        contentDescription = "Menu Options",
                                         tint = Color.White,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(19.dp)
                                     )
-                                    // Notification dot if KYC not completed or new insight available
-                                    if (!uiState.userData.isBehavioralKycCompleted || uiState.recentInsight != null) {
+                                    if (uiState.recentInsight != null) {
                                         Box(
                                             modifier = Modifier
-                                                .size(7.dp)
+                                                .size(6.dp)
                                                 .clip(CircleShape)
                                                 .background(PhonePeAccentPurple)
                                                 .align(Alignment.TopEnd)
@@ -284,7 +261,7 @@ fun HomeScreen(
                                     }
                                 }
 
-                                // Elegant Submenu Dropdown
+                                // Structured Dropdown with Submenus
                                 DropdownMenu(
                                     expanded = showTopMenu,
                                     onDismissRequest = { showTopMenu = false },
@@ -292,7 +269,7 @@ fun HomeScreen(
                                         .background(Color(0xFF1E1632))
                                         .border(1.dp, Color(0x338B5CF6), RoundedCornerShape(14.dp))
                                 ) {
-                                    // Submenu Item: Behavioral KYC
+                                    // Submenu Section: Discipline & Health
                                     DropdownMenuItem(
                                         text = {
                                             Row(
@@ -318,7 +295,7 @@ fun HomeScreen(
                                                 }
                                                 Spacer(modifier = Modifier.width(16.dp))
                                                 Text(
-                                                    text = if (uiState.userData.isBehavioralKycCompleted) "100%" else "+250 XP",
+                                                    text = if (uiState.userData.isBehavioralKycCompleted) "Active" else "+250 XP",
                                                     fontFamily = HelveticaFontFamily,
                                                     color = if (uiState.userData.isBehavioralKycCompleted) EmeraldGreen else AmberCashback,
                                                     fontSize = 11.sp,
@@ -333,7 +310,6 @@ fun HomeScreen(
                                         modifier = Modifier.testTag("home_kyc_badge_button")
                                     )
 
-                                    // Submenu Item: AI Insights & Roasts
                                     DropdownMenuItem(
                                         text = {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -345,7 +321,7 @@ fun HomeScreen(
                                                 )
                                                 Spacer(modifier = Modifier.width(10.dp))
                                                 Text(
-                                                    text = "Discipline AI Insights",
+                                                    text = "AI Discipline Insights",
                                                     fontFamily = HelveticaFontFamily,
                                                     color = Color.White,
                                                     fontSize = 13.sp,
@@ -360,7 +336,12 @@ fun HomeScreen(
                                         modifier = Modifier.testTag("home_notifications_bell")
                                     )
 
-                                    // Submenu Item: Runway Autonomous Finance
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(vertical = 4.dp),
+                                        color = Color(0x20FFFFFF)
+                                    )
+
+                                    // Submenu Section: Finance & Forecasting
                                     DropdownMenuItem(
                                         text = {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -386,7 +367,6 @@ fun HomeScreen(
                                         }
                                     )
 
-                                    // Submenu Item: Allowance & Budget Limits
                                     DropdownMenuItem(
                                         text = {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -398,7 +378,7 @@ fun HomeScreen(
                                                 )
                                                 Spacer(modifier = Modifier.width(10.dp))
                                                 Text(
-                                                    text = "Goals & Allowance Budget",
+                                                    text = "Goals & Budget Limits",
                                                     fontFamily = HelveticaFontFamily,
                                                     color = Color.White,
                                                     fontSize = 13.sp,
@@ -412,7 +392,37 @@ fun HomeScreen(
                                         }
                                     )
 
-                                    // Submenu Item: Help & Support
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(vertical = 4.dp),
+                                        color = Color(0x20FFFFFF)
+                                    )
+
+                                    // Submenu Section: Uploads & Statements
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.UploadFile,
+                                                    contentDescription = null,
+                                                    tint = EmeraldGreen,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(10.dp))
+                                                Text(
+                                                    text = "Upload Docx & Payment Slips",
+                                                    fontFamily = HelveticaFontFamily,
+                                                    color = Color.White,
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
+                                        },
+                                        onClick = {
+                                            showTopMenu = false
+                                            onNavigateToTab("log")
+                                        }
+                                    )
+
                                     DropdownMenuItem(
                                         text = {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -443,9 +453,9 @@ fun HomeScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                    // 2. High-End Habit Wallet & Discipline Pass Banner (Minimal Dark Glassmorphism)
+                    // 2. Minimalist Glassmorphic Habit Balance Card
                     GlassCard(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -473,38 +483,20 @@ fun HomeScreen(
                                 .fillMaxWidth()
                                 .padding(18.dp)
                         ) {
-                            // Top Tag: PhonePe Habit-Wallet + VIP Discipline Badge
+                            // Top Tag: Wallet title & Level badge
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(24.dp)
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(PhonePePurple),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "₹",
-                                            fontFamily = HelveticaFontFamily,
-                                            color = Color.White,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "HABIT-WALLET • UPI LITE",
-                                        fontFamily = HelveticaFontFamily,
-                                        color = Color.White,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        letterSpacing = 0.8.sp
-                                    )
-                                }
+                                Text(
+                                    text = "AVAILABLE DISCIPLINE BALANCE",
+                                    fontFamily = HelveticaFontFamily,
+                                    color = TextSecondary,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    letterSpacing = 0.8.sp
+                                )
 
                                 GlassBadge(
                                     text = "${uiState.xp} XP • LVL 4",
@@ -515,26 +507,17 @@ fun HomeScreen(
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(14.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                            // Big Balance Display
-                            Text(
-                                text = "Available Discipline Balance",
-                                fontFamily = HelveticaFontFamily,
-                                color = TextSecondary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-
+                            // Large, Pristine Balance Display
                             Row(
-                                verticalAlignment = Alignment.Bottom,
-                                modifier = Modifier.padding(top = 2.dp)
+                                verticalAlignment = Alignment.Bottom
                             ) {
                                 Text(
                                     text = "₹${uiState.balance.toInt()}",
                                     fontFamily = HelveticaFontFamily,
                                     color = Color.White,
-                                    fontSize = 38.sp,
+                                    fontSize = 36.sp,
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = (-1.0).sp
                                 )
@@ -542,13 +525,13 @@ fun HomeScreen(
                                     text = ".00",
                                     fontFamily = HelveticaFontFamily,
                                     color = TextSecondary,
-                                    fontSize = 20.sp,
+                                    fontSize = 18.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     modifier = Modifier.padding(bottom = 4.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "/ ₹${uiState.userData.allowance} limit",
+                                    text = "of ₹${uiState.userData.allowance} limit",
                                     fontFamily = HelveticaFontFamily,
                                     color = TextMuted,
                                     fontSize = 12.sp,
@@ -557,66 +540,137 @@ fun HomeScreen(
                                 )
                             }
 
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Clean Progress Bar (Allowance utilization)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(5.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0x20FFFFFF))
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(balanceRatio.toFloat())
+                                        .fillMaxHeight()
+                                        .clip(CircleShape)
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                listOf(
+                                                    PhonePeLightPurple,
+                                                    if (isLowBalance) CoralRed else EmeraldGreen
+                                                )
+                                            )
+                                        )
+                                )
+                            }
+
                             Spacer(modifier = Modifier.height(14.dp))
 
-                            // 5-Bar Discipline Histogram + "I Resisted" Dopamine Button
+                            // 7-Day Discipline & Impulse Spending Graph (Requested by user)
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "7-Day Impulse Streak",
+                                        fontFamily = HelveticaFontFamily,
+                                        color = TextSecondary,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Text(
+                                        text = "94% Clean Streak",
+                                        fontFamily = HelveticaFontFamily,
+                                        color = EmeraldGreen,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(44.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.Bottom
+                                ) {
+                                    val days = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+                                    val heights = listOf(0.40f, 0.65f, 0.85f, 0.55f, 1.0f, 0.75f, 0.90f)
+                                    val currentDayIndex = 4
+
+                                    days.forEachIndexed { index, day ->
+                                        val isCurrent = index == currentDayIndex
+                                        val heightFraction = heights[index]
+
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .width(18.dp)
+                                                    .fillMaxHeight(heightFraction)
+                                                    .clip(RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp))
+                                                    .background(
+                                                        if (isCurrent) Brush.verticalGradient(
+                                                            listOf(EmeraldGreen, PhonePeLightPurple)
+                                                        ) else Brush.verticalGradient(
+                                                            listOf(Color(0x358B5CF6), Color(0x208B5CF6))
+                                                        )
+                                                    )
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = day,
+                                                fontFamily = HelveticaFontFamily,
+                                                color = if (isCurrent) Color.White else TextMuted,
+                                                fontSize = 9.sp,
+                                                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            // Bottom Row: Status tag & Single dopamine "+ Resist" pill
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // 5-Bar Discipline Streak Histogram
-                                Column {
-                                    Text(
-                                        text = "7-Day Impulse Streak",
-                                        fontFamily = HelveticaFontFamily,
-                                        color = TextSecondary,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Row(
-                                        modifier = Modifier
-                                            .width(130.dp)
-                                            .height(30.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(5.dp),
-                                        verticalAlignment = Alignment.Bottom
-                                    ) {
-                                        val heights = listOf(0.4f, 0.65f, 0.85f, 1.0f, 0.55f)
-                                        heights.forEachIndexed { i, ratio ->
-                                            val isCurrent = i == 3
-                                            Box(
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .fillMaxHeight(ratio)
-                                                    .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                                .background(
-                                                    if (isCurrent) PhonePeLightPurple
-                                                    else Color(0x288B5CF6)
-                                                )
-                                            )
-                                        }
-                                    }
-                                }
+                                Text(
+                                    text = if (isLowBalance) "⚠️ Low balance buffer" else "✨ Disciplined pace",
+                                    fontFamily = HelveticaFontFamily,
+                                    color = if (isLowBalance) CoralRed else SoftLavender,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
 
-                                // Quick Dopamine "I Resisted" Glass Button
+                                // Dopamine "I Resisted" Pill
                                 Box(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF201635))
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(Color(0xFF221738))
                                         .border(
                                             1.dp,
                                             Brush.linearGradient(
                                                 listOf(
-                                                    Color(0x408B5CF6),
-                                                    Color(0x25A855F7),
-                                                    Color(0x20F59E0B)
+                                                    Color(0x508B5CF6),
+                                                    Color(0x30F59E0B)
                                                 )
                                             ),
-                                            RoundedCornerShape(16.dp)
+                                            RoundedCornerShape(14.dp)
                                         )
                                         .clickable { onResist() }
-                                        .padding(horizontal = 14.dp, vertical = 9.dp)
+                                        .padding(horizontal = 14.dp, vertical = 7.dp)
                                         .testTag("home_resist_button"),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -645,33 +699,25 @@ fun HomeScreen(
             }
         }
 
-        // 2a. Big Runway XAI Engine Hero Card (Requested: Big button below audit card)
+        // 3. Bigger Runway AI Telemetry Card (Simulate button removed as requested)
         item {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(horizontal = 18.dp, vertical = 6.dp)
             ) {
                 GlassCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onNavigateToTab("runway") }
                         .testTag("home_runway_banner"),
-                    shape = RoundedCornerShape(22.dp),
-                    backgroundColor = Color(0xFF1B122F),
+                    shape = RoundedCornerShape(20.dp),
+                    backgroundColor = Color(0xFF191129),
                     gradientBrush = Brush.verticalGradient(
-                        listOf(
-                            Color(0xFF2E1754),
-                            Color(0xFF1E1138),
-                            Color(0xFF140B26)
-                        )
+                        listOf(Color(0xFF2E1754), Color(0xFF1B0E33), Color(0xFF130924))
                     ),
                     borderBrush = Brush.linearGradient(
-                        listOf(
-                            Color(0x808B5CF6),
-                            Color(0x40C4B5FD),
-                            Color(0x2000D09C)
-                        )
+                        listOf(Color(0x608B5CF6), Color(0x30A78BFA), Color(0x18FFFFFF))
                     ),
                     elevation = 0.dp
                 ) {
@@ -680,6 +726,7 @@ fun HomeScreen(
                             .fillMaxWidth()
                             .padding(18.dp)
                     ) {
+                        // Header
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -695,17 +742,19 @@ fun HomeScreen(
                                                 listOf(Color(0xFF7C3AED), Color(0xFF4C1D95))
                                             )
                                         )
-                                        .border(1.2.dp, Color(0x60DDD6FE), RoundedCornerShape(14.dp)),
+                                        .border(1.2.dp, Color(0x50DDD6FE), RoundedCornerShape(14.dp)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.TrendingUp,
-                                        contentDescription = "Runway Engine",
+                                        contentDescription = "Runway Intelligence",
                                         tint = Color.White,
-                                        modifier = Modifier.size(26.dp)
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
+
                                 Spacer(modifier = Modifier.width(12.dp))
+
                                 Column {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
@@ -714,12 +763,12 @@ fun HomeScreen(
                                             color = Color.White,
                                             fontSize = 15.sp,
                                             fontWeight = FontWeight.Bold,
-                                            letterSpacing = 0.6.sp
+                                            letterSpacing = 0.4.sp
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = "Autonomous Liquidity & Decision Trees",
+                                        text = "Predictive Liquidity & Financial Runway",
                                         fontFamily = HelveticaFontFamily,
                                         color = SoftLavender,
                                         fontSize = 11.sp
@@ -738,14 +787,14 @@ fun HomeScreen(
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        // Live Telemetry Highlights (Runway days and burn velocity)
+                        // Large Telemetry Data Grid
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0x20000000))
-                                .border(1.dp, Color(0x1A8B5CF6), RoundedCornerShape(12.dp))
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(Color(0x22000000))
+                                .border(1.dp, Color(0x1A8B5CF6), RoundedCornerShape(14.dp))
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -758,166 +807,236 @@ fun HomeScreen(
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 0.6.sp
                                 )
-                                Text(
-                                    text = "19.2 Days",
-                                    fontFamily = HelveticaFontFamily,
-                                    color = Color.White,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Row(verticalAlignment = Alignment.Bottom) {
+                                    Text(
+                                        text = "19.2",
+                                        fontFamily = HelveticaFontFamily,
+                                        color = Color.White,
+                                        fontSize = 22.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Days left",
+                                        fontFamily = HelveticaFontFamily,
+                                        color = EmeraldGreen,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.padding(bottom = 2.dp)
+                                    )
+                                }
                             }
 
                             Box(
                                 modifier = Modifier
                                     .width(1.dp)
-                                    .height(28.dp)
+                                    .height(36.dp)
                                     .background(Color(0x20FFFFFF))
                             )
 
                             Column {
                                 Text(
-                                    text = "BURN VELOCITY",
+                                    text = "DAILY BURN VELOCITY",
                                     fontFamily = HelveticaFontFamily,
                                     color = TextMuted,
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 0.6.sp
                                 )
-                                Text(
-                                    text = "₹${uiState.currentOutflowDay} / day",
-                                    fontFamily = HelveticaFontFamily,
-                                    color = if (uiState.isCriticalBurn) CoralRed else EmeraldGreen,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Row(verticalAlignment = Alignment.Bottom) {
+                                    Text(
+                                        text = "₹${uiState.currentOutflowDay}",
+                                        fontFamily = HelveticaFontFamily,
+                                        color = if (uiState.isCriticalBurn) CoralRed else EmeraldGreen,
+                                        fontSize = 22.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "/ day",
+                                        fontFamily = HelveticaFontFamily,
+                                        color = TextSecondary,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Normal,
+                                        modifier = Modifier.padding(bottom = 2.dp)
+                                    )
+                                }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
-                        // Big Launch Action Bar
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(
-                                    Brush.horizontalGradient(
-                                        listOf(PhonePeLightPurple, PhonePePurple)
-                                    )
-                                )
-                                .padding(vertical = 12.dp),
-                            contentAlignment = Alignment.Center
+                        // Explanatory note indicating the tab can be opened
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "Launch Runway AI Simulation",
-                                    fontFamily = HelveticaFontFamily,
-                                    color = Color.White,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
+                            Text(
+                                text = "Algorithmic decision tree models cashflow liquidity.",
+                                fontFamily = HelveticaFontFamily,
+                                color = TextMuted,
+                                fontSize = 10.sp
+                            )
+                            Text(
+                                text = "View Engine ↗",
+                                fontFamily = HelveticaFontFamily,
+                                color = SoftLavender,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
             }
         }
 
-        // 2b. Upload CSV / Excel Statement Button Card (User Request: "make the uplaod csv and excel file button")
+        // 3b. Dedicated WhatsApp Spending Goals Helper Card & Judge Notice
         item {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                    .padding(horizontal = 18.dp, vertical = 6.dp)
             ) {
-                GlassCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showUploadStatementModal = true }
-                        .testTag("home_upload_csv_card"),
-                    shape = RoundedCornerShape(18.dp),
-                    backgroundColor = Color(0xFF161126),
-                    gradientBrush = Brush.verticalGradient(
-                        listOf(Color(0xFF22143B), Color(0xFF140D22))
-                    ),
-                    borderBrush = Brush.linearGradient(
-                        listOf(Color(0x388B5CF6), Color(0x1FFFFFFF))
-                    ),
-                    elevation = 0.dp
-                ) {
-                    Row(
+                Column {
+                    GlassCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .clickable {
+                                try {
+                                    val waIntent = Intent(
+                                        Intent.ACTION_VIEW,
+                                        Uri.parse("https://wa.me/?text=Hi%20Habit-Wallet%20AI!%20Help%20me%20track%20my%20spending%20goals.")
+                                    )
+                                    context.startActivity(waIntent)
+                                } catch (e: Exception) {
+                                    // Fallback handled safely
+                                }
+                            }
+                            .testTag("whatsapp_spending_goals_helper_tab"),
+                        shape = RoundedCornerShape(18.dp),
+                        backgroundColor = Color(0xFF131F1D),
+                        gradientBrush = Brush.verticalGradient(
+                            listOf(Color(0xFF162D24), Color(0xFF101C17))
+                        ),
+                        borderBrush = Brush.linearGradient(
+                            listOf(Color(0x8025D366), Color(0x3025D366), Color(0x18FFFFFF))
+                        ),
+                        elevation = 0.dp
                     ) {
-                        Box(
+                        Row(
                             modifier = Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(Color(0x2600D09C))
-                                .border(1.dp, Color(0x4000D09C), RoundedCornerShape(14.dp)),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Description,
-                                contentDescription = "Upload CSV",
-                                tint = EmeraldGreen,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(Color(0x2825D366))
+                                        .border(1.2.dp, Color(0x7025D366), RoundedCornerShape(14.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.Chat,
+                                        contentDescription = "WhatsApp Bot",
+                                        tint = Color(0xFF25D366),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
 
-                        Spacer(modifier = Modifier.width(12.dp))
+                                Spacer(modifier = Modifier.width(12.dp))
 
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "Your Personal WhatsApp Spending Goals Helper",
+                                            fontFamily = HelveticaFontFamily,
+                                            color = Color.White,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "24/7 AI Accountability Bot on WhatsApp",
+                                        fontFamily = HelveticaFontFamily,
+                                        color = Color(0xCC25D366),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFF25D366))
+                                    .padding(horizontal = 12.dp, vertical = 7.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Text(
-                                    text = "Upload Statement (CSV / Excel)",
+                                    text = "Chat ↗",
                                     fontFamily = HelveticaFontFamily,
-                                    color = Color.White,
-                                    fontSize = 13.sp,
+                                    color = Color(0xFF0F2418),
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                GlassBadge(
-                                    text = "AUTO-AUDIT",
-                                    textColor = EmeraldGreen,
-                                    borderColor = EmeraldGreen.copy(alpha = 0.4f),
-                                    backgroundColor = EmeraldGreen.copy(alpha = 0.12f)
-                                )
                             }
-                            Spacer(modifier = Modifier.height(2.dp))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Notice Message for the Judge
+                    GlassCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("whatsapp_judge_whitelist_notice"),
+                        shape = RoundedCornerShape(12.dp),
+                        backgroundColor = Color(0xFF1C162E),
+                        gradientBrush = Brush.verticalGradient(
+                            listOf(Color(0xFF22173B), Color(0xFF160F25))
+                        ),
+                        borderBrush = Brush.linearGradient(
+                            listOf(Color(0x358B5CF6), Color(0x2525D366))
+                        ),
+                        elevation = 0.dp
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Judge Note",
+                                tint = SoftLavender,
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .padding(top = 1.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Import PhonePe, GPay, HDFC, or SBI records to auto-categorize expenses",
+                                text = "As only three numbers are whitelisted for the judge to use the bot, your number has to be whitelisted. To provide this demo, we have included our WhatsApp bot into the demo AI video.",
                                 fontFamily = HelveticaFontFamily,
                                 color = TextSecondary,
                                 fontSize = 11.sp,
-                                lineHeight = 14.sp
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .size(34.dp)
-                                .clip(CircleShape)
-                                .background(Color(0x208B5CF6))
-                                .border(1.dp, Color(0x338B5CF6), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.UploadFile,
-                                contentDescription = "Upload",
-                                tint = SoftLavender,
-                                modifier = Modifier.size(18.dp)
+                                lineHeight = 15.sp,
+                                fontWeight = FontWeight.Normal
                             )
                         }
                     }
@@ -929,17 +1048,16 @@ fun HomeScreen(
         if (isLowBalance) {
             item {
                 val roastMsg = when {
-                    balanceRatio <= 0.05 -> "Bro, you're practically paying in thoughts & prayers now. Stop spending."
-                    balanceRatio <= 0.15 -> "Your bank account just filed a restraining order against you."
-                    else -> "Danger zone! Time to look up recipes for plain rice and ice cubes."
+                    balanceRatio <= 0.05 -> "Stop spending. Your wallet is at critical reserves."
+                    balanceRatio <= 0.15 -> "Danger zone! Conserve your allowance for remaining days."
+                    else -> "Warning: Low balance pace detected."
                 }
-                val emoji = if (balanceRatio <= 0.10) "💀" else "🚨"
 
                 GlassCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                    shape = RoundedCornerShape(16.dp),
+                        .padding(horizontal = 18.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(14.dp),
                     backgroundColor = Color(0xFF2E0D17),
                     gradientBrush = Brush.verticalGradient(
                         listOf(Color(0xFF3F1321), Color(0xFF240A12))
@@ -947,30 +1065,29 @@ fun HomeScreen(
                     borderBrush = Brush.linearGradient(
                         listOf(Color(0xFFF43F5E), Color(0x60F43F5E))
                     ),
-                    elevation = 4.dp
+                    elevation = 0.dp
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp),
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(text = emoji, fontSize = 22.sp)
+                        Text(text = "🚨", fontSize = 18.sp)
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             text = roastMsg,
                             fontFamily = HelveticaFontFamily,
                             color = CoralRed,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            lineHeight = 15.sp
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
             }
         }
 
-        // 5. Recent AI Insight Glassmorphic Card
+        // 5. Recent AI Insight Glassmorphic Card (if active)
         item {
             AnimatedVisibility(
                 visible = uiState.recentInsight != null,
@@ -986,36 +1103,26 @@ fun HomeScreen(
                     GlassCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .padding(horizontal = 18.dp, vertical = 4.dp)
                             .testTag("recent_insight_card"),
-                        shape = RoundedCornerShape(18.dp),
+                        shape = RoundedCornerShape(16.dp),
                         backgroundColor = Color(0xFF1F1836),
                         gradientBrush = Brush.verticalGradient(
                             listOf(Color(0xFF2B204C), Color(0xFF18122B))
                         ),
                         borderBrush = Brush.linearGradient(
-                            listOf(accentColor, Color(0x608B5CF6), Color(0x403B82F6))
+                            listOf(accentColor, Color(0x608B5CF6))
                         ),
-                        elevation = 4.dp
+                        elevation = 0.dp
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(14.dp),
+                                .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(accentColor.copy(alpha = 0.2f))
-                                    .border(1.dp, accentColor.copy(alpha = 0.5f), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(text = badgeEmoji, fontSize = 18.sp)
-                            }
-
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(text = badgeEmoji, fontSize = 18.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
 
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
@@ -1030,8 +1137,8 @@ fun HomeScreen(
                                     fontFamily = HelveticaFontFamily,
                                     color = TextPrimary,
                                     fontSize = 11.sp,
-                                    lineHeight = 15.sp,
-                                    modifier = Modifier.padding(top = 2.dp)
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
 
@@ -1040,7 +1147,7 @@ fun HomeScreen(
                                 contentDescription = "Dismiss",
                                 tint = TextMuted,
                                 modifier = Modifier
-                                    .size(18.dp)
+                                    .size(16.dp)
                                     .clickable { onDismissInsight() }
                                     .testTag("dismiss_insight_button")
                             )
@@ -1050,180 +1157,130 @@ fun HomeScreen(
             }
         }
 
-        // 6. Transaction Log Header & Filter Chips (in Vibrant PhonePe Style)
+        // 6. Recent Activity Section Header with Clean Filter Submenu
         item {
+            val filterCategories = listOf(
+                "All" to "All Spends",
+                "food" to "Food",
+                "friends" to "Friends",
+                "essential" to "Grocery",
+                "shopping" to "Shopping",
+                "income" to "Income",
+                "bs" to "Impulse",
+                "health" to "Health",
+                "travel" to "Travel"
+            )
+            val activeLabel = filterCategories.find { it.first.equals(uiState.filterCat, ignoreCase = true) }?.second ?: "All Spends"
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 10.dp)
-                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .background(Color(0xFF140F24))
-                    .border(
-                        1.dp,
-                        Brush.verticalGradient(listOf(Color(0xFF8B5CF6), Color(0x338B5CF6))),
-                        RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-                    )
-                    .padding(horizontal = 16.dp, vertical = 14.dp)
+                    .padding(horizontal = 18.dp, vertical = 8.dp)
             ) {
-                Column {
-                    // Center drag pill indicator
-                    Box(
-                        modifier = Modifier
-                            .size(width = 38.dp, height = 4.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(Color(0x608B5CF6))
-                            .align(Alignment.CenterHorizontally)
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    val filterCategories = listOf(
-                        "All" to "All Spends",
-                        "food" to "Food",
-                        "friends" to "Friends",
-                        "essential" to "Grocery",
-                        "shopping" to "Shopping",
-                        "income" to "Income",
-                        "bs" to "Impulse",
-                        "health" to "Health",
-                        "travel" to "Travel"
-                    )
-                    val activeLabel = filterCategories.find { it.first.equals(uiState.filterCat, ignoreCase = true) }?.second ?: "All Spends"
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "Recent Activity",
-                                fontFamily = HelveticaFontFamily,
-                                color = Color.White,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = (-0.2).sp
-                            )
-                            Text(
-                                text = "${filteredTxns.size} transactions",
-                                fontFamily = HelveticaFontFamily,
-                                color = TextMuted,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Normal
-                            )
-                        }
-
-                        // Category Filter Submenu Dropdown Button
-                        Box {
-                            Row(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color(0xFF1E1734))
-                                    .border(1.dp, Color(0x338B5CF6), RoundedCornerShape(12.dp))
-                                    .clickable { showCategoryMenu = !showCategoryMenu }
-                                    .padding(horizontal = 10.dp, vertical = 6.dp)
-                                    .testTag("txn_category_dropdown_button"),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                if (uiState.filterCat != "All") {
-                                    CategoryIcon(type = uiState.filterCat, size = 13.dp)
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                }
-                                Text(
-                                    text = activeLabel,
-                                    fontFamily = HelveticaFontFamily,
-                                    color = SoftLavender,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = if (showCategoryMenu) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Select Category",
-                                    tint = SoftLavender,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
-
-                            // Submenu Filter Dropdown Menu
-                            DropdownMenu(
-                                expanded = showCategoryMenu,
-                                onDismissRequest = { showCategoryMenu = false },
-                                modifier = Modifier
-                                    .background(Color(0xFF1E1632))
-                                    .border(1.dp, Color(0x388B5CF6), RoundedCornerShape(14.dp))
-                            ) {
-                                filterCategories.forEach { (catKey, label) ->
-                                    val isSelected = uiState.filterCat.equals(catKey, ignoreCase = true)
-                                    DropdownMenuItem(
-                                        text = {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                if (catKey != "All") {
-                                                    CategoryIcon(type = catKey, size = 15.dp)
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                }
-                                                Text(
-                                                    text = label,
-                                                    fontFamily = HelveticaFontFamily,
-                                                    color = if (isSelected) Color.White else TextSecondary,
-                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                                    fontSize = 12.sp
-                                                )
-                                            }
-                                        },
-                                        trailingIcon = {
-                                            if (isSelected) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = "Selected",
-                                                    tint = PhonePeLightPurple,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                            }
-                                        },
-                                        onClick = {
-                                            onFilterSelect(catKey)
-                                            showCategoryMenu = false
-                                        },
-                                        modifier = Modifier.testTag("filter_chip_$catKey")
-                                    )
-                                }
-                            }
-                        }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Activity",
+                            fontFamily = HelveticaFontFamily,
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "(${filteredTxns.size})",
+                            fontFamily = HelveticaFontFamily,
+                            color = TextMuted,
+                            fontSize = 12.sp
+                        )
                     }
 
-                    if (uiState.filterCat != "All") {
-                        Spacer(modifier = Modifier.height(8.dp))
+                    // Category Filter Dropdown Submenu
+                    Box {
                         Row(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0x1F8B5CF6))
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color(0xFF1E1734))
+                                .border(1.dp, Color(0x338B5CF6), RoundedCornerShape(10.dp))
+                                .clickable { showCategoryMenu = !showCategoryMenu }
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                                .testTag("txn_category_dropdown_button"),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            if (uiState.filterCat != "All") {
+                                CategoryIcon(type = uiState.filterCat, size = 12.dp)
+                                Spacer(modifier = Modifier.width(5.dp))
+                            }
                             Text(
-                                text = "Filter: $activeLabel",
+                                text = activeLabel,
                                 fontFamily = HelveticaFontFamily,
                                 color = SoftLavender,
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.SemiBold
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "✕ Reset",
-                                fontFamily = HelveticaFontFamily,
-                                color = Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.clickable { onFilterSelect("All") }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = if (showCategoryMenu) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = "Select Category",
+                                tint = SoftLavender,
+                                modifier = Modifier.size(14.dp)
                             )
+                        }
+
+                        // Filter Submenu
+                        DropdownMenu(
+                            expanded = showCategoryMenu,
+                            onDismissRequest = { showCategoryMenu = false },
+                            modifier = Modifier
+                                .background(Color(0xFF1E1632))
+                                .border(1.dp, Color(0x388B5CF6), RoundedCornerShape(14.dp))
+                        ) {
+                            filterCategories.forEach { (catKey, label) ->
+                                val isSelected = uiState.filterCat.equals(catKey, ignoreCase = true)
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            if (catKey != "All") {
+                                                CategoryIcon(type = catKey, size = 14.dp)
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                            }
+                                            Text(
+                                                text = label,
+                                                fontFamily = HelveticaFontFamily,
+                                                color = if (isSelected) Color.White else TextSecondary,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                fontSize = 12.sp
+                                            )
+                                        }
+                                    },
+                                    trailingIcon = {
+                                        if (isSelected) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "Selected",
+                                                tint = PhonePeLightPurple,
+                                                modifier = Modifier.size(15.dp)
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        onFilterSelect(catKey)
+                                        showCategoryMenu = false
+                                    },
+                                    modifier = Modifier.testTag("filter_chip_$catKey")
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        // 7. Transaction Items (Rendered with Vibrant High-Contrast Cards)
+        // 7. Clean, Pristine Transaction Cards (No Messy Run-on Texts)
         items(filteredTxns, key = { it.id }) { txn ->
             PhonePeTransactionCard(txn = txn)
         }
@@ -1232,215 +1289,13 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(96.dp))
         }
     }
-
-    if (showUploadStatementModal) {
-        StatementUploadModal(
-            visible = showUploadStatementModal,
-            onDismiss = { showUploadStatementModal = false },
-            onImportDemoStatement = { bank ->
-                onImportDemoStatement(bank)
-                showUploadStatementModal = false
-            },
-            onImportCsv = { csv ->
-                onImportCsv(csv)
-                showUploadStatementModal = false
-            }
-        )
-    }
 }
-
-@Composable
-fun StatementUploadModal(
-    visible: Boolean,
-    onDismiss: () -> Unit,
-    onImportDemoStatement: (String) -> Unit,
-    onImportCsv: (String) -> Unit
-) {
-    if (!visible) return
-    val context = LocalContext.current
-    var customCsvText by remember { mutableStateOf("") }
-
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let {
-            try {
-                val content = context.contentResolver.openInputStream(it)?.bufferedReader()?.use { reader ->
-                    reader.readText()
-                }
-                if (!content.isNullOrBlank()) {
-                    onImportCsv(content)
-                }
-            } catch (e: Exception) {
-                // Ignore file read error gracefully
-            }
-        }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1E1535),
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Description,
-                    contentDescription = null,
-                    tint = EmeraldGreen,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = "Upload Statement (CSV / Excel)",
-                    fontFamily = HelveticaFontFamily,
-                    color = Color.White,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(
-                    text = "Import transactions from PhonePe, GPay, HDFC, SBI, or ICICI CSV/Excel files to automatically audit and categorize spending.",
-                    fontFamily = HelveticaFontFamily,
-                    color = TextSecondary,
-                    fontSize = 12.sp,
-                    lineHeight = 16.sp
-                )
-
-                // Native Device File Picker Button
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(PhonePeLightPurple, PhonePePurple)
-                            )
-                        )
-                        .clickable { filePickerLauncher.launch("*/*") }
-                        .padding(vertical = 12.dp, horizontal = 14.dp)
-                        .testTag("upload_file_picker_button"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.UploadFile,
-                            contentDescription = "Pick File",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Browse CSV / Excel on Device",
-                            fontFamily = HelveticaFontFamily,
-                            color = Color.White,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                // Quick 1-Tap Statement Import Options
-                Text(
-                    text = "QUICK 1-TAP BANK DEMO IMPORTS",
-                    fontFamily = HelveticaFontFamily,
-                    color = SoftLavender,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF281845))
-                            .border(1.dp, Color(0x608B5CF6), RoundedCornerShape(12.dp))
-                            .clickable { onImportDemoStatement("PhonePe UPI") }
-                            .padding(vertical = 12.dp, horizontal = 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "📱 PhonePe UPI", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            Text(text = "6 Sample Txns", color = SoftLavender, fontSize = 10.sp)
-                        }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF1A263D))
-                            .border(1.dp, Color(0x6038BDF8), RoundedCornerShape(12.dp))
-                            .clickable { onImportDemoStatement("HDFC Statement") }
-                            .padding(vertical = 12.dp, horizontal = 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "🏛️ HDFC Bank", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            Text(text = "6 Sample Txns", color = SoftLavender, fontSize = 10.sp)
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                // Custom CSV Paste
-                Text(
-                    text = "OR PASTE STATEMENT CSV",
-                    fontFamily = HelveticaFontFamily,
-                    color = SoftLavender,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp
-                )
-
-                OutlinedTextField(
-                    value = customCsvText,
-                    onValueChange = { customCsvText = it },
-                    placeholder = { Text("e.g. Swiggy, 420\nDecathlon, 1200\nSalary Credit, 25000", color = TextMuted, fontSize = 11.sp) },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = PhonePeLightPurple,
-                        unfocusedBorderColor = Color(0x408B5CF6)
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(90.dp)
-                )
-
-                if (customCsvText.isNotBlank()) {
-                    Button(
-                        onClick = { onImportCsv(customCsvText) },
-                        colors = ButtonDefaults.buttonColors(containerColor = PhonePePurple),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Parse & Add Transactions", color = Color.White, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = onDismiss,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0x28FFFFFF))
-            ) {
-                Text("Close", color = Color.White)
-            }
-        }
-    )
-}
-
 
 /**
- * PhonePe Transaction Card with vibrant styling, merchant avatar,
- * status subtitle ("Debited from Habit Wallet"), and health impact badge.
+ * Ultra-clean, minimal transaction card.
+ *
+ * Eliminates wordy run-on text strings so that fonts and layouts remain
+ * crisp, balanced, and perfectly proportioned.
  */
 @Composable
 fun PhonePeTransactionCard(
@@ -1450,94 +1305,77 @@ fun PhonePeTransactionCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .padding(horizontal = 18.dp, vertical = 3.dp)
     ) {
         GlassCard(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(14.dp),
             backgroundColor = Color(0xFF151022),
             gradientBrush = null,
             borderBrush = Brush.linearGradient(
-                listOf(Color(0x228B5CF6), Color(0x14FFFFFF))
+                listOf(Color(0x228B5CF6), Color(0x10FFFFFF))
             ),
             elevation = 0.dp
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Merchant/Category Icon in Google Pay / PhonePe Squircle container
+                // Category / Merchant Icon Squircle
                 BusinessCategoryTile(
                     type = txn.cat,
-                    size = 44.dp,
-                    iconSize = 22.dp
+                    size = 38.dp,
+                    iconSize = 18.dp
                 )
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Transaction Title, Context, and Subtitle
+                // Clean Merchant Title & Context
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = txn.name,
                         fontFamily = HelveticaFontFamily,
                         color = Color.White,
-                        fontSize = 14.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = (-0.2).sp,
+                        letterSpacing = (-0.1).sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = if (txn.amount > 0) "Credited to Habit-Wallet • ${txn.date}"
-                        else "Debited from Habit-Wallet • ${txn.date}",
+                        text = if (txn.context.isNotBlank()) txn.context else txn.date,
                         fontFamily = HelveticaFontFamily,
                         color = TextSecondary,
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.Normal,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 1.dp)
+                        overflow = TextOverflow.Ellipsis
                     )
-
-                    if (txn.context.isNotBlank()) {
-                        Text(
-                            text = txn.context,
-                            fontFamily = HelveticaFontFamily,
-                            color = SoftLavender,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
-                    }
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // PhonePe Amount & Health/Discipline Impact
+                // High-Contrast Amount & Impact Tag
                 val isPositive = txn.amount > 0
                 val amountColor = if (isPositive) EmeraldGreen else Color.White
                 val prefix = if (isPositive) "+₹" else "-₹"
 
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "$prefix${abs(txn.amount).toInt()}.00",
+                        text = "$prefix${abs(txn.amount).toInt()}",
                         fontFamily = HelveticaFontFamily,
                         color = amountColor,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = (-0.2).sp
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
                     )
 
                     if (txn.isJunk) {
                         Text(
-                            text = "💔 -45m life",
+                            text = "💔 -45m",
                             fontFamily = HelveticaFontFamily,
                             color = CoralRed,
-                            fontSize = 10.sp,
+                            fontSize = 9.sp,
                             fontWeight = FontWeight.Bold
                         )
                     } else if (txn.cat.equals("food", ignoreCase = true) || txn.cat.equals("essential", ignoreCase = true)) {
@@ -1545,7 +1383,7 @@ fun PhonePeTransactionCard(
                             text = "🥗 +20 XP",
                             fontFamily = HelveticaFontFamily,
                             color = EmeraldGreen,
-                            fontSize = 10.sp,
+                            fontSize = 9.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }

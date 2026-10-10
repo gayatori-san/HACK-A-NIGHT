@@ -4,6 +4,10 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,9 +25,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -34,16 +42,23 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DirectionsBike
+import androidx.compose.material.icons.filled.ElectricBolt
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Laptop
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Savings
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -87,6 +102,142 @@ import com.example.ui.theme.TextSecondary
 import com.example.viewmodel.WalletUiState
 import kotlin.math.max
 
+data class ImportantPaymentOption(
+    val id: String,
+    val name: String,
+    val subtitle: String,
+    val emoji: String,
+    val defaultTarget: Double,
+    val category: String, // "Liability" or "Asset"
+    val defaultWallet: String,
+    val priorityTag: String,
+    val tagColor: Color,
+    val psychologicalNote: String
+)
+
+val IMPORTANT_PAYMENT_OPTIONS = listOf(
+    ImportantPaymentOption(
+        id = "home_loan",
+        name = "Home Loan / Housing EMI",
+        subtitle = "Multi-Year Long-Term Mortgage",
+        emoji = "🏠",
+        defaultTarget = 35000.0,
+        category = "Liability",
+        defaultWallet = "Habit Lock Vault",
+        priorityTag = "CRITICAL MULTI-YEAR",
+        tagColor = CoralRed,
+        psychologicalNote = "Non-negotiable multi-year commitment. Missing home loan EMIs triggers high penalty interest and severely degrades your credit score."
+    ),
+    ImportantPaymentOption(
+        id = "big_emis",
+        name = "Big EMIs & Vehicle Loan",
+        subtitle = "Car / Automobile Multi-Year EMI",
+        emoji = "🚗",
+        defaultTarget = 18000.0,
+        category = "Liability",
+        defaultWallet = "Habit Lock Vault",
+        priorityTag = "HIGH PRIORITY EMI",
+        tagColor = AmberWarning,
+        psychologicalNote = "Fixed recurring liability. Pre-allocating to your vault prevents dangerous month-end deficit crunches."
+    ),
+    ImportantPaymentOption(
+        id = "electricity_bills",
+        name = "Electricity & Power Utility Bills",
+        subtitle = "Monthly Non-Negotiable Power Bills",
+        emoji = "⚡",
+        defaultTarget = 3500.0,
+        category = "Liability",
+        defaultWallet = "UPI Lite Vault",
+        priorityTag = "ESSENTIAL BILL",
+        tagColor = PhonePeLightPurple,
+        psychologicalNote = "Fundamental life utility. Always reserve upfront so your family's essential living services are never interrupted."
+    ),
+    ImportantPaymentOption(
+        id = "water_gas_bills",
+        name = "Water, Piped Gas & Utility Dues",
+        subtitle = "Essential Civic Utilities",
+        emoji = "💧",
+        defaultTarget = 1500.0,
+        category = "Liability",
+        defaultWallet = "UPI Lite Vault",
+        priorityTag = "ESSENTIAL BILL",
+        tagColor = SoftLavender,
+        psychologicalNote = "Basic household recurring dues required for everyday life, sanitation, and health."
+    ),
+    ImportantPaymentOption(
+        id = "house_rent",
+        name = "House Rent & Maintenance",
+        subtitle = "Monthly Shelter Obligation",
+        emoji = "🏢",
+        defaultTarget = 24000.0,
+        category = "Liability",
+        defaultWallet = "Habit Lock Vault",
+        priorityTag = "ESSENTIAL SHELTER",
+        tagColor = CoralRed,
+        psychologicalNote = "Due on the 1st of every month. Locking this capital away prevents accidental weekend overspending."
+    ),
+    ImportantPaymentOption(
+        id = "insurance",
+        name = "Health & Term Insurance Premium",
+        subtitle = "Annual Policy Defense Shield",
+        emoji = "🏥",
+        defaultTarget = 24000.0,
+        category = "Asset",
+        defaultWallet = "Habit Lock Vault",
+        priorityTag = "VITAL DEFENSE",
+        tagColor = EmeraldGreen,
+        psychologicalNote = "Prevents sudden medical emergency bankruptcy. Your single most vital defensive financial shield."
+    ),
+    ImportantPaymentOption(
+        id = "education_loan",
+        name = "Education / Tuition Loan EMI",
+        subtitle = "Child Tuition or Degree Loan",
+        emoji = "🎓",
+        defaultTarget = 15000.0,
+        category = "Liability",
+        defaultWallet = "Habit Lock Vault",
+        priorityTag = "MULTI-YEAR LOAN",
+        tagColor = AmberWarning,
+        psychologicalNote = "Multi-year educational investment. Punctual payment safeguards your family's academic future."
+    ),
+    ImportantPaymentOption(
+        id = "credit_card",
+        name = "Credit Card Total Dues & Debt",
+        subtitle = "Clear High-Interest 42% APR Debt",
+        emoji = "💳",
+        defaultTarget = 30000.0,
+        category = "Liability",
+        defaultWallet = "Habit Lock Vault",
+        priorityTag = "DANGEROUS DEBT",
+        tagColor = CoralRed,
+        psychologicalNote = "Credit cards compound at 42% APR. Eliminating this liability yields an instant guaranteed 42% return."
+    ),
+    ImportantPaymentOption(
+        id = "emergency_runway",
+        name = "Emergency Runway (6-12 Months)",
+        subtitle = "Liquid Buffer for Job Loss & Emergencies",
+        emoji = "🛡️",
+        defaultTarget = 150000.0,
+        category = "Asset",
+        defaultWallet = "Habit Lock Vault",
+        priorityTag = "PEACE OF MIND",
+        tagColor = EmeraldGreen,
+        psychologicalNote = "6 months of living expenses safely stashed gives you total leverage and autonomy in life."
+    ),
+    ImportantPaymentOption(
+        id = "custom_goal",
+        name = "Custom Milestone / Goal",
+        subtitle = "Enter your own goal name and budget",
+        emoji = "✨",
+        defaultTarget = 10000.0,
+        category = "Asset",
+        defaultWallet = "Habit Lock Vault",
+        priorityTag = "CUSTOM GOAL",
+        tagColor = SoftLavender,
+        psychologicalNote = "Categorize carefully whether this will grow your net worth (Asset) or drain cashflow (Liability)."
+    )
+)
+
 @Composable
 fun BudgetScreen(
     uiState: WalletUiState,
@@ -96,14 +247,18 @@ fun BudgetScreen(
     onAddGoal: (SavingGoal) -> Unit = {},
     onDepositGoal: (String, Double) -> Unit = { _, _ -> },
     onDeleteGoal: (String) -> Unit = {},
+    onToggleCfoMode: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    var isCfoModeActive by remember { mutableStateOf(false) }
+    var isCfoModeActive by remember(uiState.isCfoModeActive) { mutableStateOf(uiState.isCfoModeActive) }
     var showCreateGoalDialog by remember { mutableStateOf(false) }
+    var showButtonDropdown by remember { mutableStateOf(false) }
+    var preselectedPaymentOption by remember { mutableStateOf<ImportantPaymentOption?>(null) }
 
     BackHandler(enabled = isCfoModeActive) {
         isCfoModeActive = false
+        onToggleCfoMode(false)
     }
 
     val allowance = uiState.userData.allowance
@@ -127,15 +282,142 @@ fun BudgetScreen(
     ) {
         if (!isCfoModeActive) {
             // ==========================================
-            // PRIMARY VIEW: GOALS FIRST -> DISCIPLINE SLIDER -> CFO BUTTON
+            // PRIMARY VIEW: PRIORITY AUDIT FIRST -> GOALS & WALLETS -> DISCIPLINE SLIDER -> CFO
             // ==========================================
 
-            // 1. Header Title & Goals Overview
+            // 1. FIRSTLY: "What are your most important payments over the years?" Priority Assessment
             item {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 18.dp)
+                        .padding(horizontal = 20.dp, vertical = 14.dp)
+                ) {
+                    GlassCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        backgroundColor = Color(0xFF161026),
+                        gradientBrush = Brush.verticalGradient(
+                            listOf(Color(0xFF281442), Color(0xFF130C22))
+                        ),
+                        borderBrush = Brush.linearGradient(
+                            listOf(Color(0x60F59E0B), Color(0x308B5CF6))
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(18.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(30.dp)
+                                            .clip(CircleShape)
+                                            .background(AmberWarning.copy(alpha = 0.2f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ElectricBolt,
+                                            contentDescription = null,
+                                            tint = AmberWarning,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "IMPORTANT PAYMENTS OVER THE YEARS",
+                                        fontFamily = HelveticaFontFamily,
+                                        color = AmberWarning,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.8.sp
+                                    )
+                                }
+                                GlassBadge(
+                                    text = "MUST SECURE FIRST",
+                                    textColor = CoralRed,
+                                    borderColor = CoralRed.copy(alpha = 0.4f),
+                                    backgroundColor = CoralRed.copy(alpha = 0.15f)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Text(
+                                text = "What are your most important payments over the years?",
+                                fontFamily = HelveticaFontFamily,
+                                color = Color.White,
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Home loans, big EMIs, and bills like electricity must be prioritized before allocating savings to discretionary goals.",
+                                fontFamily = HelveticaFontFamily,
+                                color = TextSecondary,
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp
+                            )
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            Text(
+                                text = "SELECT PRIORITY OBLIGATION TO LOCK WITH 1-TAP:",
+                                fontFamily = HelveticaFontFamily,
+                                color = SoftLavender,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(IMPORTANT_PAYMENT_OPTIONS.take(7)) { option ->
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(Color(0x28FFFFFF))
+                                            .border(1.dp, option.tagColor.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                                            .clickable {
+                                                preselectedPaymentOption = option
+                                                showCreateGoalDialog = true
+                                            }
+                                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(text = option.emoji, fontSize = 15.sp)
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Column {
+                                                Text(
+                                                    text = option.name,
+                                                    color = Color.White,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                                Text(
+                                                    text = "₹${option.defaultTarget.toInt()} • ${option.subtitle}",
+                                                    color = SoftLavender,
+                                                    fontSize = 9.sp
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Goals & Wallets Header & Overview
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 6.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -147,7 +429,7 @@ fun BudgetScreen(
                                 text = "Goals & Wallets",
                                 fontFamily = HelveticaFontFamily,
                                 color = Color.White,
-                                fontSize = 30.sp,
+                                fontSize = 28.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = (-0.5).sp
                             )
@@ -160,31 +442,102 @@ fun BudgetScreen(
                             )
                         }
 
-                        // Create Goal Action Button
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(PhonePePurple)
-                                .clickable { showCreateGoalDialog = true }
-                                .padding(horizontal = 12.dp, vertical = 8.dp)
-                                .testTag("create_goal_button"),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "Add Goal",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
+                        // Create Goal Action Button with INSTANT DROPDOWN MENU
+                        Box {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(PhonePePurple)
+                                    .clickable {
+                                        showButtonDropdown = true
+                                    }
+                                    .padding(horizontal = 14.dp, vertical = 9.dp)
+                                    .testTag("set_new_goal_button")
+                                    .testTag("create_goal_button"),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = "Set a New Goal",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Set a New Goal",
+                                        fontFamily = HelveticaFontFamily,
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.KeyboardArrowDown,
+                                        contentDescription = "Dropdown Menu",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                }
+                            }
+
+                            // The Instant Dropdown Menu right when "Set a New Goal" button is clicked
+                            DropdownMenu(
+                                expanded = showButtonDropdown,
+                                onDismissRequest = { showButtonDropdown = false },
+                                modifier = Modifier
+                                    .background(Color(0xFF1E1335))
+                                    .border(1.dp, Color(0x608B5CF6), RoundedCornerShape(12.dp))
+                                    .testTag("set_new_goal_instant_dropdown")
+                            ) {
                                 Text(
-                                    text = "New Goal",
-                                    fontFamily = HelveticaFontFamily,
-                                    color = Color.White,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
+                                    text = "  MOST IMPORTANT PAYMENTS OVER THE YEARS",
+                                    color = AmberWarning,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                                 )
+                                IMPORTANT_PAYMENT_OPTIONS.forEach { opt ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(text = opt.emoji, fontSize = 16.sp)
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Column {
+                                                        Text(
+                                                            text = opt.name,
+                                                            color = Color.White,
+                                                            fontSize = 12.sp,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                        Text(
+                                                            text = "₹${opt.defaultTarget.toInt()} • ${opt.subtitle}",
+                                                            color = TextMuted,
+                                                            fontSize = 10.sp
+                                                        )
+                                                    }
+                                                }
+                                                Spacer(modifier = Modifier.width(10.dp))
+                                                GlassBadge(
+                                                    text = opt.priorityTag,
+                                                    textColor = opt.tagColor,
+                                                    borderColor = opt.tagColor.copy(alpha = 0.3f),
+                                                    backgroundColor = opt.tagColor.copy(alpha = 0.12f)
+                                                )
+                                            }
+                                        },
+                                        onClick = {
+                                            preselectedPaymentOption = opt
+                                            showButtonDropdown = false
+                                            showCreateGoalDialog = true
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -265,7 +618,7 @@ fun BudgetScreen(
                                                 listOf(PhonePeLightPurple, EmeraldGreen)
                                             )
                                         )
-                                )
+                                    )
                             }
                         }
                     }
@@ -311,6 +664,10 @@ fun BudgetScreen(
                                     ) {
                                         Icon(
                                             imageVector = when {
+                                                goal.name.contains("Home", true) || goal.name.contains("House", true) || goal.name.contains("Rent", true) -> Icons.Default.Home
+                                                goal.name.contains("Electric", true) || goal.name.contains("Bill", true) || goal.name.contains("Power", true) -> Icons.Default.ElectricBolt
+                                                goal.name.contains("Loan", true) || goal.name.contains("EMI", true) || goal.name.contains("Car", true) -> Icons.Default.AccountBalance
+                                                goal.name.contains("Insurance", true) || goal.name.contains("Health", true) -> Icons.Default.Security
                                                 goal.name.contains("Bike", true) -> Icons.Default.DirectionsBike
                                                 goal.name.contains("MacBook", true) || goal.name.contains("Laptop", true) -> Icons.Default.Laptop
                                                 isAsset -> Icons.Default.Savings
@@ -340,6 +697,21 @@ fun BudgetScreen(
                                                 borderColor = categoryColor.copy(alpha = 0.4f),
                                                 backgroundColor = categoryColor.copy(alpha = 0.12f)
                                             )
+                                            if (goal.name.contains("Home", true) || goal.name.contains("Loan", true) || goal.name.contains("EMI", true)) {
+                                                GlassBadge(
+                                                    text = "PRIORITY EMI",
+                                                    textColor = CoralRed,
+                                                    borderColor = CoralRed.copy(alpha = 0.4f),
+                                                    backgroundColor = CoralRed.copy(alpha = 0.15f)
+                                                )
+                                            } else if (goal.name.contains("Electric", true) || goal.name.contains("Bill", true)) {
+                                                GlassBadge(
+                                                    text = "MANDATORY BILL",
+                                                    textColor = PhonePeLightPurple,
+                                                    borderColor = PhonePeLightPurple.copy(alpha = 0.4f),
+                                                    backgroundColor = PhonePeLightPurple.copy(alpha = 0.15f)
+                                                )
+                                            }
                                             Text(
                                                 text = "• ${goal.walletType}",
                                                 fontFamily = HelveticaFontFamily,
@@ -765,7 +1137,10 @@ fun BudgetScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
-                        onClick = { isCfoModeActive = false },
+                        onClick = {
+                            isCfoModeActive = false
+                            onToggleCfoMode(false)
+                        },
                         modifier = Modifier
                             .size(38.dp)
                             .clip(CircleShape)
@@ -1076,37 +1451,293 @@ fun BudgetScreen(
     // CREATE GOAL DIALOG / MODAL
     // ==========================================
     if (showCreateGoalDialog) {
-        var goalName by remember { mutableStateOf("") }
-        var targetAmtStr by remember { mutableStateOf("") }
+        val initialOption = preselectedPaymentOption ?: IMPORTANT_PAYMENT_OPTIONS.first()
+        var selectedOption by remember { mutableStateOf(initialOption) }
+        var isDropdownExpanded by remember { mutableStateOf(true) } // Drops down instantly when button is clicked
+        var goalName by remember { mutableStateOf(selectedOption.name) }
+        var targetAmtStr by remember { mutableStateOf(selectedOption.defaultTarget.toInt().toString()) }
         var savedAmtStr by remember { mutableStateOf("0") }
-        var category by remember { mutableStateOf("Liability") } // "Asset" or "Liability"
-        var walletType by remember { mutableStateOf("Habit Lock Vault") }
+        var category by remember { mutableStateOf(selectedOption.category) } // "Asset" or "Liability"
+        var walletType by remember { mutableStateOf(selectedOption.defaultWallet) }
+
+        val selectPaymentOption: (ImportantPaymentOption) -> Unit = { opt ->
+            selectedOption = opt
+            goalName = opt.name
+            targetAmtStr = opt.defaultTarget.toInt().toString()
+            category = opt.category
+            walletType = opt.defaultWallet
+            isDropdownExpanded = false
+        }
 
         AlertDialog(
             onDismissRequest = { showCreateGoalDialog = false },
-            containerColor = Color(0xFF1E1535),
+            containerColor = Color(0xFF1B1230),
             title = {
-                Text(
-                    text = "Create New Goal & Wallet",
-                    fontFamily = HelveticaFontFamily,
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Set a New Goal & Wallet",
+                            fontFamily = HelveticaFontFamily,
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Priority Financial Obligations",
+                            fontFamily = HelveticaFontFamily,
+                            color = SoftLavender,
+                            fontSize = 11.sp
+                        )
+                    }
+                    IconButton(
+                        onClick = { showCreateGoalDialog = false },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Close", tint = TextMuted)
+                    }
+                }
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        text = "Set what you are saving for (Bike, Gadget, Asset) and categorize financial impact.",
-                        fontFamily = HelveticaFontFamily,
-                        color = TextSecondary,
-                        fontSize = 12.sp
-                    )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Firstly: Question Prompt Card
+                    GlassCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        backgroundColor = Color(0xFF261545),
+                        borderBrush = Brush.linearGradient(
+                            listOf(Color(0x60F59E0B), Color(0x308B5CF6))
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(text = "⚡", fontSize = 14.sp)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "FIRST: CHOOSE PRIORITY OBLIGATION",
+                                    fontFamily = HelveticaFontFamily,
+                                    color = AmberWarning,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.5.sp
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "What is your most important payment over the years?",
+                                fontFamily = HelveticaFontFamily,
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Home loans, big EMIs, and bills like electricity must be prioritized before discretionary spending.",
+                                fontFamily = HelveticaFontFamily,
+                                color = TextSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
 
+                    // THE INSTANT DROPDOWN MENU SELECTOR
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Priority Obligation Dropdown",
+                                fontFamily = HelveticaFontFamily,
+                                color = SoftLavender,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = if (isDropdownExpanded) "Tap to close ✕" else "Tap to change ▾",
+                                fontFamily = HelveticaFontFamily,
+                                color = PhonePeLightPurple,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.clickable { isDropdownExpanded = !isDropdownExpanded }
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        // Clickable trigger box
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFF241540))
+                                .border(
+                                    1.5.dp,
+                                    if (isDropdownExpanded) PhonePeLightPurple else Color(0x408B5CF6),
+                                    RoundedCornerShape(12.dp)
+                                )
+                                .clickable { isDropdownExpanded = !isDropdownExpanded }
+                                .padding(horizontal = 14.dp, vertical = 12.dp)
+                                .testTag("important_payment_dropdown_trigger")
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(text = selectedOption.emoji, fontSize = 20.sp)
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(
+                                            text = selectedOption.name,
+                                            fontFamily = HelveticaFontFamily,
+                                            color = Color.White,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = selectedOption.subtitle,
+                                            fontFamily = HelveticaFontFamily,
+                                            color = TextSecondary,
+                                            fontSize = 10.sp
+                                        )
+                                    }
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    GlassBadge(
+                                        text = selectedOption.priorityTag,
+                                        textColor = selectedOption.tagColor,
+                                        borderColor = selectedOption.tagColor.copy(alpha = 0.4f),
+                                        backgroundColor = selectedOption.tagColor.copy(alpha = 0.15f)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Icon(
+                                        imageVector = if (isDropdownExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                        contentDescription = "Toggle Dropdown",
+                                        tint = SoftLavender,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        // Inline Animated Dropdown Menu for Guaranteed Smooth Visibility
+                        this.AnimatedVisibility(
+                            visible = isDropdownExpanded,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(Color(0xFF1E1335))
+                                    .border(1.dp, Color(0x608B5CF6), RoundedCornerShape(14.dp))
+                                    .padding(vertical = 4.dp)
+                                    .testTag("important_payment_inline_dropdown_menu")
+                            ) {
+                                IMPORTANT_PAYMENT_OPTIONS.forEach { opt ->
+                                    val isCurrent = opt.id == selectedOption.id
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable { selectPaymentOption(opt) }
+                                            .background(if (isCurrent) Color(0x358B5CF6) else Color.Transparent)
+                                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Text(text = opt.emoji, fontSize = 18.sp)
+                                                Spacer(modifier = Modifier.width(10.dp))
+                                                Column {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Text(
+                                                            text = opt.name,
+                                                            color = if (isCurrent) PhonePeLightPurple else Color.White,
+                                                            fontSize = 13.sp,
+                                                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
+                                                        )
+                                                        if (isCurrent) {
+                                                            Spacer(modifier = Modifier.width(6.dp))
+                                                            Icon(
+                                                                imageVector = Icons.Default.Check,
+                                                                contentDescription = "Selected",
+                                                                tint = EmeraldGreen,
+                                                                modifier = Modifier.size(14.dp)
+                                                            )
+                                                        }
+                                                    }
+                                                    Text(
+                                                        text = "${opt.subtitle} • ₹${opt.defaultTarget.toInt()}",
+                                                        color = TextMuted,
+                                                        fontSize = 10.sp
+                                                    )
+                                                }
+                                            }
+                                            GlassBadge(
+                                                text = opt.priorityTag,
+                                                textColor = opt.tagColor,
+                                                borderColor = opt.tagColor.copy(alpha = 0.3f),
+                                                backgroundColor = opt.tagColor.copy(alpha = 0.12f)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Psychological & Priority Advice Box
+                    GlassCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        backgroundColor = Color(0x22FFFFFF),
+                        borderBrush = Brush.linearGradient(
+                            listOf(selectedOption.tagColor.copy(alpha = 0.3f), Color(0x15FFFFFF))
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Text(text = "💡", fontSize = 14.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = selectedOption.psychologicalNote,
+                                fontFamily = HelveticaFontFamily,
+                                color = SoftLavender,
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+
+                    // Editable Goal Name TextField
                     OutlinedTextField(
                         value = goalName,
                         onValueChange = { goalName = it },
-                        label = { Text("Goal Name (e.g. Yamaha R15 Bike)") },
+                        label = { Text("Goal Name") },
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color.White,
@@ -1114,23 +1745,59 @@ fun BudgetScreen(
                             focusedBorderColor = PhonePeLightPurple,
                             unfocusedBorderColor = Color(0x408B5CF6)
                         ),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag("goal_name_input")
                     )
 
-                    OutlinedTextField(
-                        value = targetAmtStr,
-                        onValueChange = { targetAmtStr = it },
-                        label = { Text("Target Amount (₹)") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = PhonePeLightPurple,
-                            unfocusedBorderColor = Color(0x408B5CF6)
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    // Editable Target Amount TextField
+                    Column {
+                        OutlinedTextField(
+                            value = targetAmtStr,
+                            onValueChange = { targetAmtStr = it },
+                            label = { Text("Target Amount (₹)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = PhonePeLightPurple,
+                                unfocusedBorderColor = Color(0x408B5CF6)
+                            ),
+                            modifier = Modifier.fillMaxWidth().testTag("target_amount_input")
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        // Quick Amount Adjuster Chips
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            val chips = listOf(
+                                "₹3.5k" to 3500.0,
+                                "₹15k" to 15000.0,
+                                "₹25k" to 25000.0,
+                                "₹35k" to 35000.0,
+                                "₹50k" to 50000.0,
+                                "₹1 Lakh" to 100000.0,
+                                "₹25 Lakhs" to 2500000.0
+                            )
+                            items(chips) { (label, amount) ->
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (targetAmtStr == amount.toInt().toString()) PhonePePurple else Color(0x18FFFFFF))
+                                        .clickable { targetAmtStr = amount.toInt().toString() }
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        text = label,
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+                    }
 
                     // Category Toggle: Asset vs Liability
                     Column {
@@ -1157,9 +1824,9 @@ fun BudgetScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "Asset (Wealth)",
+                                    text = "Asset (Wealth/Protection)",
                                     color = if (category == "Asset") EmeraldGreen else TextSecondary,
-                                    fontSize = 12.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -1175,9 +1842,9 @@ fun BudgetScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "Liability (Expense)",
+                                    text = "Liability (Mandatory/EMI)",
                                     color = if (category == "Liability") CoralRed else TextSecondary,
-                                    fontSize = 12.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -1196,15 +1863,15 @@ fun BudgetScreen(
                         Spacer(modifier = Modifier.height(6.dp))
                         val wallets = listOf(
                             "Habit Lock Vault",
-                            "Amazon Pay Wallet",
                             "UPI Lite Vault",
+                            "Amazon Pay Wallet",
                             "Digital Gold"
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            wallets.take(2).forEach { w ->
+                            wallets.forEach { w ->
                                 val isSelected = walletType == w
                                 Box(
                                     modifier = Modifier
@@ -1216,10 +1883,11 @@ fun BudgetScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = w,
+                                        text = w.replace(" Vault", "").replace(" Wallet", ""),
                                         color = if (isSelected) Color.White else TextSecondary,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1
                                     )
                                 }
                             }
@@ -1246,9 +1914,10 @@ fun BudgetScreen(
                         )
                         showCreateGoalDialog = false
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = PhonePePurple)
+                    colors = ButtonDefaults.buttonColors(containerColor = PhonePePurple),
+                    modifier = Modifier.testTag("confirm_create_goal_button")
                 ) {
-                    Text("Create Goal & Wallet", color = Color.White)
+                    Text("Set Goal & Link Wallet", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {

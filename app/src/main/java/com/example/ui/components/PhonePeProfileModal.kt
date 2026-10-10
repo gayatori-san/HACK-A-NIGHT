@@ -26,10 +26,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Fingerprint
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Wallet
@@ -108,7 +108,7 @@ fun PhonePeProfileModal(
                         )
                         Spacer(modifier = Modifier.width(16.dp))
                         Icon(
-                            imageVector = Icons.Default.HelpOutline,
+                            imageVector = Icons.AutoMirrored.Filled.HelpOutline,
                             contentDescription = "Help",
                             tint = Color.White,
                             modifier = Modifier.size(22.dp)

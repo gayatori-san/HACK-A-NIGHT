@@ -22,12 +22,12 @@ import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -63,7 +63,7 @@ object BusinessIconRegistry {
                 label = "Food & Dining"
             )
             "friends" -> CategoryMeta(
-                icon = Icons.Default.ReceiptLong,
+                icon = Icons.AutoMirrored.Filled.ReceiptLong,
                 iconTint = Color(0xFFC4B5FD), // Soft lavender
                 containerBg = Color(0xFF201635),
                 borderColor = Color(0x408B5CF6),
@@ -105,7 +105,7 @@ object BusinessIconRegistry {
                 label = "Salary & Income"
             )
             "invest" -> CategoryMeta(
-                icon = Icons.Default.TrendingUp,
+                icon = Icons.AutoMirrored.Filled.TrendingUp,
                 iconTint = Color(0xFFA5B4FC), // Muted indigo
                 containerBg = Color(0xFF181C38),
                 borderColor = Color(0x406366F1),

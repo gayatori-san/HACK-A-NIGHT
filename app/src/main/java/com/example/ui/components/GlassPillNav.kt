@@ -24,7 +24,7 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,6 +44,7 @@ import com.example.ui.theme.EmeraldGreen
 import com.example.ui.theme.HelveticaFontFamily
 import com.example.ui.theme.PhonePeLightPurple
 import com.example.ui.theme.PhonePePurple
+import com.example.ui.theme.SoftLavender
 
 @Composable
 fun GlassPillNav(
@@ -125,37 +126,57 @@ fun GlassPillNav(
             }
         }
 
-        // Elevated Center PhonePe QR Scanner Button with sleek floating styling
-        Box(
-            modifier = Modifier
-                .offset(y = (-14).dp)
-                .size(52.dp)
-                .shadow(14.dp, CircleShape, spotColor = Color(0xAA7C3AED))
-                .clip(CircleShape)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color(0xFF8B5CF6), Color(0xFF6D28D9))
-                    )
-                )
-                .border(
-                    1.5.dp,
-                    Color(0x80DDD6FE),
-                    CircleShape
-                )
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    onTabSelected("log")
-                }
-                .testTag("nav_qr_scan"),
-            contentAlignment = Alignment.Center
+        // Elevated Center "Upload Docx & Payment Slips" Button with sleek floating styling
+        val isUploadSelected = currentTab == "log"
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.offset(y = (-16).dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.QrCodeScanner,
-                contentDescription = "Scan QR",
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .shadow(16.dp, CircleShape, spotColor = if (isUploadSelected) EmeraldGreen else Color(0xAA7C3AED))
+                    .clip(CircleShape)
+                    .background(
+                        if (isUploadSelected) Brush.verticalGradient(
+                            listOf(Color(0xFF00D09C), Color(0xFF059669))
+                        ) else Brush.verticalGradient(
+                            listOf(Color(0xFF8B5CF6), Color(0xFF6D28D9))
+                        )
+                    )
+                    .border(
+                        1.5.dp,
+                        if (isUploadSelected) Color(0xFF6EE7B7) else Color(0x80DDD6FE),
+                        CircleShape
+                    )
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        onTabSelected("log")
+                    }
+                    .testTag("nav_upload_docx")
+                    .testTag("nav_qr_scan"),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.UploadFile,
+                    contentDescription = "Upload Docx and Payment Slips",
+                    tint = Color.White,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            // Tab label: "DOCX & SLIPS"
+            Text(
+                text = "DOCX & SLIPS",
+                fontFamily = HelveticaFontFamily,
+                color = if (isUploadSelected) EmeraldGreen else SoftLavender,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp
             )
         }
     }

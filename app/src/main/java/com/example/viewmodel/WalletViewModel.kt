@@ -58,6 +58,7 @@ data class WalletUiState(
         )
     ),
     val tab: String = "home", // "home", "budget", "log", "health", "friends"
+    val isCfoModeActive: Boolean = false,
     val xp: Int = 250,
     val notifMessage: String = "",
     val notifVisible: Boolean = false,
@@ -114,6 +115,9 @@ data class WalletUiState(
 
     val isCriticalBurn: Boolean
         get() = currentOutflowDay > safeLimitDay
+
+    val runwayDays: Double
+        get() = if (currentOutflowDay > 0) (balance / currentOutflowDay.toDouble()).coerceAtLeast(0.0) else 24.5
 
     val silverGrowth: Long
         get() = if (balance > 0) (balance * 1.09.pow(5)).roundToInt().toLong() else 0L
@@ -540,17 +544,29 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
             _uiState.update { it.copy(logState = "analyzing") }
             val extracted = GeminiAiService.parseScannedReceipt(bytes)
             if (extracted.isNotEmpty()) {
-                _uiState.update {
-                    it.copy(
-                        tempData = extracted,
-                        currentTxnIndex = 0,
-                        logState = "reason",
-                        logCategory = "",
-                        logNecessity = "",
-                        logFoodType = "",
-                        logContext = ""
+                val newTxns = extracted.mapIndexed { idx, sc ->
+                    TransactionItem(
+                        id = System.currentTimeMillis() + idx,
+                        name = sc.payee,
+                        amount = -abs(sc.amount),
+                        cat = "essential",
+                        date = "Just now",
+                        colorHex = 0xFF8B5CF6,
+                        necessity = "Absolute Need"
                     )
                 }
+                _uiState.update { state ->
+                    state.copy(
+                        txns = newTxns + state.txns,
+                        tab = "budget", // Redirect to Budget tab
+                        isCfoModeActive = true, // Open Budget CFO Mode per user request
+                        logState = "idle",
+                        tempData = emptyList(),
+                        currentTxnIndex = 0
+                    )
+                }
+                val totalAmt = newTxns.sumOf { abs(it.amount) }
+                showNotif("🧾 OCR parsed new payment of ₹${totalAmt.toInt()}! Redirected to Budget CFO mode.")
             } else {
                 _uiState.update { it.copy(logState = "idle") }
                 showNotif("Could not read receipt clearly. Use manual entry.")
@@ -664,6 +680,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                     )
                 }
             } else {
+                val shouldOpenCfo = !isIncome
                 _uiState.update {
                     it.copy(
                         txns = listOf(newTxn) + it.txns,
@@ -674,14 +691,21 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                         currentTxnIndex = 0,
                         manualPayee = "",
                         manualAmount = "",
-                        tab = "home"
+                        tab = if (shouldOpenCfo) "budget" else "home",
+                        isCfoModeActive = shouldOpenCfo
                     )
                 }
-                if (isIncome) {
+                if (shouldOpenCfo) {
+                    showNotif("⚡ Payment of ₹${abs(newTxn.amount).toInt()} recorded! Redirected to Budget CFO.")
+                } else if (isIncome) {
                     showNotif(result.message)
                 }
             }
         }
+    }
+
+    fun setCfoMode(active: Boolean) {
+        _uiState.update { it.copy(isCfoModeActive = active) }
     }
 
     fun handleSettleFriend(txn: TransactionItem) {
@@ -833,23 +857,46 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
         showNotif("Goal removed.")
     }
 
-    fun importDemoStatement(bankName: String) {
-        val sampleStatementTxns = listOf(
-            TransactionItem(System.currentTimeMillis() + 1, "Swiggy Instant Delivery", -420.0, "food", "Today, 01:15 PM", 0xFFFF9800, "NEGATIVE", "Lunch order", "Impulse Buy", "junk"),
-            TransactionItem(System.currentTimeMillis() + 2, "Amazon India (Electronics)", -1850.0, "shopping", "Yesterday, 06:40 PM", 0xFF9C27B0, "NEUTRAL", "Tech gear", "Planned Want"),
-            TransactionItem(System.currentTimeMillis() + 3, "Uber City Ride", -290.0, "travel", "Yesterday, 09:10 AM", 0xFF00BCD4, "NEUTRAL", "Office commute", "Absolute Need"),
-            TransactionItem(System.currentTimeMillis() + 4, "Starbucks Coffee", -380.0, "food", "08 May, 04:30 PM", 0xFFFF9800, "NEGATIVE", "Cold brew", "Impulse Buy", "junk"),
-            TransactionItem(System.currentTimeMillis() + 5, "Blinkit Grocery", -650.0, "food", "07 May, 11:20 AM", 0xFF10B981, "POSITIVE", "Groceries & Milk", "Absolute Need", "healthy"),
-            TransactionItem(System.currentTimeMillis() + 6, "Salary Credit / UPI Lite", 8500.0, "income", "05 May, 10:00 AM", 0xFF10B981, "NEUTRAL", "Direct Bank Deposit")
-        )
+    fun importDemoStatement(slipOrBankName: String) {
+        val sampleStatementTxns = when {
+            slipOrBankName.contains("Electricity", true) || slipOrBankName.contains("Bill", true) -> listOf(
+                TransactionItem(System.currentTimeMillis() + 1, "Adani Electricity Mumbai (Bill Slip)", -2450.0, "essential", "Today, 10:15 AM", 0xFFFF9800, "NEUTRAL", "Monthly Power Bill", "Absolute Need"),
+                TransactionItem(System.currentTimeMillis() + 2, "Tata Power Utility (Bill Slip)", -1380.0, "essential", "03 May, 04:00 PM", 0xFFFF9800, "NEUTRAL", "Power Utility Bill", "Absolute Need"),
+                TransactionItem(System.currentTimeMillis() + 3, "Mahanagar Gas Bill (Slip)", -860.0, "essential", "28 Apr, 11:30 AM", 0xFF00BCD4, "NEUTRAL", "Piped Natural Gas", "Absolute Need")
+            )
+            slipOrBankName.contains("Home Loan", true) || slipOrBankName.contains("EMI", true) -> listOf(
+                TransactionItem(System.currentTimeMillis() + 1, "HDFC Bank Home Loan EMI (Slip)", -38500.0, "essential", "01 May, 09:00 AM", 0xFFE91E63, "NEUTRAL", "Home Loan Principal & Interest", "Absolute Need"),
+                TransactionItem(System.currentTimeMillis() + 2, "ICICI Car Loan EMI (Slip)", -12200.0, "essential", "05 May, 10:30 AM", 0xFF9C27B0, "NEUTRAL", "Vehicle Loan EMI", "Absolute Need"),
+                TransactionItem(System.currentTimeMillis() + 3, "SBI Personal Loan EMI (Slip)", -5400.0, "essential", "07 May, 02:15 PM", 0xFF00BCD4, "NEUTRAL", "Loan EMI", "Absolute Need")
+            )
+            slipOrBankName.contains("Salary", true) -> listOf(
+                TransactionItem(System.currentTimeMillis() + 1, "Infosys Monthly Salary Credit (Slip)", 68000.0, "income", "01 May, 08:30 AM", 0xFF10B981, "POSITIVE", "Monthly Net Take-Home Salary"),
+                TransactionItem(System.currentTimeMillis() + 2, "Annual Performance Bonus (Slip)", 25000.0, "income", "15 Apr, 11:00 AM", 0xFF10B981, "POSITIVE", "Quarterly Appraisal Incentive")
+            )
+            slipOrBankName.contains("HDFC", true) -> listOf(
+                TransactionItem(System.currentTimeMillis() + 1, "Swiggy Food Delivery", -540.0, "food", "Today, 01:25 PM", 0xFFFF9800, "NEGATIVE", "Lunch order", "Impulse Buy", "junk"),
+                TransactionItem(System.currentTimeMillis() + 2, "Decathlon Sports Gear", -2400.0, "shopping", "Yesterday, 07:10 PM", 0xFF9C27B0, "NEUTRAL", "Running shoes", "Planned Want"),
+                TransactionItem(System.currentTimeMillis() + 3, "HDFC Home Loan Auto-Debit", -35000.0, "essential", "01 May, 08:00 AM", 0xFFE91E63, "NEUTRAL", "Mortgage payment", "Absolute Need"),
+                TransactionItem(System.currentTimeMillis() + 4, "Tata Power Electricity Bill", -1890.0, "essential", "03 May, 11:30 AM", 0xFFFF9800, "NEUTRAL", "Electricity Bill", "Absolute Need"),
+                TransactionItem(System.currentTimeMillis() + 5, "Salary NEFT Credit", 65000.0, "income", "30 Apr, 09:00 AM", 0xFF10B981, "POSITIVE", "Monthly Salary")
+            )
+            else -> listOf(
+                TransactionItem(System.currentTimeMillis() + 1, "Swiggy Instant Delivery", -420.0, "food", "Today, 01:15 PM", 0xFFFF9800, "NEGATIVE", "Lunch order", "Impulse Buy", "junk"),
+                TransactionItem(System.currentTimeMillis() + 2, "Amazon India (Electronics)", -1850.0, "shopping", "Yesterday, 06:40 PM", 0xFF9C27B0, "NEUTRAL", "Tech gear", "Planned Want"),
+                TransactionItem(System.currentTimeMillis() + 3, "Uber City Ride", -290.0, "travel", "Yesterday, 09:10 AM", 0xFF00BCD4, "NEUTRAL", "Office commute", "Absolute Need"),
+                TransactionItem(System.currentTimeMillis() + 4, "Starbucks Coffee", -380.0, "food", "08 May, 04:30 PM", 0xFFFF9800, "NEGATIVE", "Cold brew", "Impulse Buy", "junk"),
+                TransactionItem(System.currentTimeMillis() + 5, "Blinkit Grocery", -650.0, "food", "07 May, 11:20 AM", 0xFF10B981, "POSITIVE", "Groceries & Milk", "Absolute Need", "healthy"),
+                TransactionItem(System.currentTimeMillis() + 6, "Salary Credit / UPI Lite", 8500.0, "income", "05 May, 10:00 AM", 0xFF10B981, "NEUTRAL", "Direct Bank Deposit")
+            )
+        }
         _uiState.update { state ->
             state.copy(
                 txns = sampleStatementTxns + state.txns,
-                tab = "runway", // Instantly redirects to runway tab per user request
+                tab = "log", // Redirects to "UPLOAD DOCX AND PAYMENT SLIPS" per user request
                 isAnalyzingStatement = true
             )
         }
-        showNotif("⚡ Statement imported! Running Runway XAI analysis...")
+        showNotif("⚡ $slipOrBankName imported! Redirecting to Document & Slips audit...")
 
         viewModelScope.launch {
             val report = GeminiAiService.analyzeUploadedStatement(
@@ -864,52 +911,129 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                     showStatementReportPopup = true
                 )
             }
-            showNotif("🚨 Runway XAI Bankruptcy Risk: ${report.bankruptcyRiskPercent}% | Month-end alert ready!")
+            showNotif("🚨 Audit complete: Risk ${report.bankruptcyRiskPercent}% | Slips verified!")
         }
     }
 
     fun importCsvContent(csvString: String) {
-        val lines = csvString.trim().lines().filter { it.isNotBlank() }
+        val rawLines = csvString.trim().lines().map { it.trim() }.filter { it.isNotBlank() }
+        if (rawLines.isEmpty()) {
+            showNotif("⚠️ Statement content is empty.")
+            return
+        }
+
         val imported = mutableListOf<TransactionItem>()
         var count = 0
-        for (line in lines) {
-            val parts = line.split(",").map { it.trim().trim('\"') }
-            if (parts.size >= 2) {
-                val payee = parts[0]
-                val amtVal = parts[1].replace("₹", "").replace("Rs", "").replace("$", "").toDoubleOrNull()
-                if (amtVal != null && !payee.equals("Payee", ignoreCase = true) && !payee.equals("Name", ignoreCase = true)) {
-                    count++
-                    val isIncome = amtVal > 0 || parts.getOrNull(2)?.contains("credit", ignoreCase = true) == true
-                    val cat = when {
-                        payee.contains("Swiggy", true) || payee.contains("Zomato", true) || payee.contains("Food", true) -> "food"
-                        payee.contains("Amazon", true) || payee.contains("Flipkart", true) -> "shopping"
-                        payee.contains("Uber", true) || payee.contains("Ola", true) || payee.contains("Metro", true) -> "travel"
-                        isIncome -> "income"
-                        else -> "essential"
-                    }
-                    val finalAmt = if (isIncome) abs(amtVal) else -abs(amtVal)
-                    imported.add(
-                        TransactionItem(
-                            id = System.currentTimeMillis() + count,
-                            name = payee,
-                            amount = finalAmt,
-                            cat = cat,
-                            date = "Imported",
-                            necessity = if (cat == "essential") "Absolute Need" else "Planned Want"
-                        )
-                    )
+
+        // Determine delimiter: comma, tab (TSV/Excel copy), or semicolon
+        val sampleLine = rawLines.firstOrNull { it.isNotBlank() } ?: ""
+        val delimiter = when {
+            sampleLine.count { it == '\t' } >= 1 -> "\t"
+            sampleLine.count { it == ';' } > sampleLine.count { it == ',' } -> ";"
+            else -> ","
+        }
+
+        // Header detection
+        val firstTokens = sampleLine.split(delimiter).map { it.trim().trim('\"', '\'') }
+        val hasHeader = firstTokens.any { token ->
+            val t = token.lowercase()
+            t.contains("date") || t.contains("payee") || t.contains("desc") ||
+            t.contains("particular") || t.contains("narration") || t.contains("amount") ||
+            t.contains("debit") || t.contains("credit") || t.contains("withdrawal") ||
+            t.contains("deposit") || t.contains("merchant") || t.contains("balance")
+        }
+
+        val dataLines = if (hasHeader && rawLines.size > 1) rawLines.drop(1) else rawLines
+
+        for (line in dataLines) {
+            val parts = line.split(delimiter).map { it.trim().trim('\"', '\'') }
+            if (parts.isEmpty()) continue
+
+            var dateStr = "Statement"
+            var detectedPayee: String? = null
+            var detectedAmt: Double? = null
+            var isCredit = false
+
+            // 1. Detect date if present
+            for (p in parts) {
+                if (p.matches(Regex("""\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}.*""")) ||
+                    p.contains("Jan", true) || p.contains("Feb", true) || p.contains("Mar", true) ||
+                    p.contains("Apr", true) || p.contains("May", true) || p.contains("Jun", true) ||
+                    p.contains("Jul", true) || p.contains("Aug", true) || p.contains("Sep", true) ||
+                    p.contains("Oct", true) || p.contains("Nov", true) || p.contains("Dec", true)) {
+                    dateStr = p
+                    break
                 }
             }
+
+            // 2. Identify amount and payee columns
+            for (p in parts) {
+                if (p == dateStr) continue
+                val cleanNum = p.replace("₹", "").replace("Rs.", "").replace("Rs", "")
+                    .replace("$", "").replace("INR", "").replace(",", "").trim()
+                val num = cleanNum.toDoubleOrNull()
+                if (num != null && detectedAmt == null) {
+                    detectedAmt = kotlin.math.abs(num)
+                    if (p.contains("+") || line.contains("credit", true) || line.contains("deposit", true)) {
+                        isCredit = true
+                    }
+                } else if (p.isNotBlank() && num == null && detectedPayee == null) {
+                    // Ignore common non-payee status words
+                    if (!p.equals("SUCCESS", true) && !p.equals("COMPLETED", true) && !p.equals("UPI", true) && !p.equals("DR", true) && !p.equals("CR", true)) {
+                        detectedPayee = p
+                    }
+                }
+            }
+
+            // 3. Fallback to positional columns if 2 items
+            if (detectedPayee == null && parts.size >= 2) {
+                detectedPayee = parts[0]
+                val clean = parts[1].replace("₹", "").replace("Rs.", "").replace("Rs", "")
+                    .replace("$", "").replace("INR", "").replace(",", "").trim()
+                detectedAmt = clean.toDoubleOrNull()
+            }
+
+            if (detectedPayee != null && detectedAmt != null) {
+                count++
+                val pLower = detectedPayee.lowercase()
+                val isIncome = isCredit || line.contains("salary", true) || line.contains("dividend", true) || pLower.contains("credit")
+                val cat = when {
+                    pLower.contains("swiggy") || pLower.contains("zomato") || pLower.contains("food") ||
+                    pLower.contains("starbucks") || pLower.contains("mcdonald") || pLower.contains("blinkit") ||
+                    pLower.contains("zepto") || pLower.contains("instamart") -> "food"
+                    pLower.contains("amazon") || pLower.contains("flipkart") || pLower.contains("myntra") ||
+                    pLower.contains("shopping") || pLower.contains("ajio") -> "shopping"
+                    pLower.contains("uber") || pLower.contains("ola") || pLower.contains("metro") ||
+                    pLower.contains("petrol") || pLower.contains("fuel") -> "travel"
+                    pLower.contains("loan") || pLower.contains("emi") || pLower.contains("rent") ||
+                    pLower.contains("electricity") || pLower.contains("power") || pLower.contains("bill") ||
+                    pLower.contains("insurance") || pLower.contains("lic") -> "essential"
+                    isIncome -> "income"
+                    else -> "essential"
+                }
+                val finalAmt = if (isIncome) detectedAmt else -detectedAmt
+                imported.add(
+                    TransactionItem(
+                        id = System.currentTimeMillis() + count,
+                        name = detectedPayee,
+                        amount = finalAmt,
+                        cat = cat,
+                        date = dateStr,
+                        necessity = if (cat == "essential") "Absolute Need" else "Planned Want"
+                    )
+                )
+            }
         }
+
         if (imported.isNotEmpty()) {
             _uiState.update { state ->
                 state.copy(
                     txns = imported + state.txns,
-                    tab = "runway", // Instantly redirects to runway tab per user request
+                    tab = "log", // Instantly redirects to UPLOAD DOCX AND PAYMENT SLIPS tab
                     isAnalyzingStatement = true
                 )
             }
-            showNotif("⚡ ${imported.size} transactions imported! Runway AI analyzing behavior...")
+            showNotif("⚡ ${imported.size} transactions imported from statement! Verifying payment slips...")
 
             viewModelScope.launch {
                 val report = GeminiAiService.analyzeUploadedStatement(
@@ -927,7 +1051,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                 showNotif("🚨 Runway XAI Bankruptcy Risk: ${report.bankruptcyRiskPercent}% | Month-end alert ready!")
             }
         } else {
-            showNotif("⚠️ Could not parse CSV rows. Format: Payee, Amount")
+            showNotif("⚠️ Could not parse statement. Please ensure each row has a Payee and Amount.")
         }
     }
 

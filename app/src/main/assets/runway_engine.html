@@ -6,15 +6,19 @@
   <title>Runway – Autonomous Finance & XAI Engine</title>
   <style>
     :root {
-      --bg-dark: #0a0813;
+      --bg-dark: #0a0618;
+      --bg-gradient: radial-gradient(circle at 50% 0%, #1e1045 0%, #0a0618 70%);
       --card-bg: rgba(255, 255, 255, 0.05);
       --card-border: rgba(255, 255, 255, 0.12);
       --phonepe-purple: #5F259F;
       --phonepe-light: #7C3AED;
-      --neon-lime: #A78BFA;
+      --phonepe-accent: #8B5CF6;
+      --neon-lime: #CCFF00;
       --coral-red: #FF4757;
       --emerald-green: #00D09C;
       --amber-warn: #FFAA00;
+      --gold-dividend: #F59E0B;
+      --cyan-tech: #38BDF8;
       --text-main: #FFFFFF;
       --text-sub: #A19EB5;
     }
@@ -28,35 +32,174 @@
     }
 
     body {
-      background: radial-gradient(circle at 50% 0%, #1a0f35 0%, var(--bg-dark) 70%);
+      background: var(--bg-gradient);
       color: var(--text-main);
       min-height: 100vh;
-      padding: 16px 14px 40px;
+      padding: 14px 14px 50px;
       overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ambient Background Glow Orbs */
+    .ambient-glow-1 {
+      position: fixed;
+      top: -80px;
+      left: 10%;
+      width: 260px;
+      height: 260px;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.28) 0%, rgba(124, 58, 237, 0) 70%);
+      pointer-events: none;
+      z-index: 0;
+      animation: ambientFloat 8s ease-in-out infinite alternate;
+    }
+
+    .ambient-glow-2 {
+      position: fixed;
+      bottom: 10%;
+      right: -60px;
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(0, 208, 156, 0.18) 0%, rgba(0, 208, 156, 0) 70%);
+      pointer-events: none;
+      z-index: 0;
+      animation: ambientFloat 10s ease-in-out infinite alternate-reverse;
+    }
+
+    @keyframes ambientFloat {
+      0% { transform: translateY(0) scale(1); }
+      100% { transform: translateY(30px) scale(1.15); }
     }
 
     /* Glassmorphism Classes */
     .glass {
+      position: relative;
+      z-index: 1;
       background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
       border: 1px solid var(--card-border);
       border-radius: 20px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
     }
 
     .glass-highlight {
-      border: 1px solid rgba(139, 92, 246, 0.35);
-      box-shadow: 0 8px 32px rgba(103, 57, 183, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(139, 92, 246, 0.45);
+      box-shadow: 0 8px 32px rgba(103, 57, 183, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+    }
+
+    /* Cute Micro-Movement CSS Animations */
+    @keyframes mascotFloat {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-5px) rotate(2deg); }
+    }
+
+    @keyframes coinTwinkle {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      50% { transform: scale(1.12) rotate(-6deg); }
+    }
+
+    @keyframes pulseRing {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.6); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(255, 71, 87, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+    }
+
+    @keyframes glowLime {
+      0%, 100% { box-shadow: 0 0 8px rgba(204, 255, 0, 0.4); }
+      50% { box-shadow: 0 0 16px rgba(204, 255, 0, 0.85); }
+    }
+
+    @keyframes sheenSweep {
+      0% { left: -100%; }
+      30%, 100% { left: 120%; }
+    }
+
+    .sheen-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sheen-card::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+      transform: skewX(-20deg);
+      animation: sheenSweep 6s infinite;
+      pointer-events: none;
+    }
+
+    /* Top In-Tab Notification Banner */
+    .notif-banner {
+      z-index: 10;
+      position: relative;
+      background: linear-gradient(135deg, rgba(255, 71, 87, 0.2) 0%, rgba(124, 58, 237, 0.25) 100%);
+      border: 1px solid rgba(255, 71, 87, 0.4);
+      border-radius: 14px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+      animation: notifSlideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes notifSlideIn {
+      from { transform: translateY(-16px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .notif-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--coral-red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      animation: pulseRing 2s infinite;
+    }
+
+    .notif-text {
+      flex: 1;
+      font-size: 11.5px;
+      line-height: 1.35;
+      color: #fff;
+    }
+
+    .notif-text strong {
+      color: #FFB3BA;
+      font-weight: 800;
+    }
+
+    .notif-action-chip {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
     }
 
     /* Header */
     .header {
+      position: relative;
+      z-index: 1;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
-      padding: 8px 4px;
+      margin-bottom: 14px;
+      padding: 4px 2px;
     }
 
     .brand {
@@ -66,8 +209,8 @@
     }
 
     .brand-icon {
-      width: 38px;
-      height: 38px;
+      width: 40px;
+      height: 40px;
       border-radius: 12px;
       background: linear-gradient(135deg, var(--neon-lime), #8ce000);
       display: flex;
@@ -75,8 +218,9 @@
       justify-content: center;
       font-weight: 900;
       color: #000;
-      font-size: 19px;
-      box-shadow: 0 4px 14px rgba(204, 255, 0, 0.35);
+      font-size: 20px;
+      box-shadow: 0 4px 16px rgba(204, 255, 0, 0.4);
+      animation: mascotFloat 3s ease-in-out infinite;
     }
 
     .brand-title {
@@ -86,7 +230,7 @@
     }
 
     .brand-subtitle {
-      font-size: 11px;
+      font-size: 10.5px;
       color: var(--neon-lime);
       font-weight: 700;
       text-transform: uppercase;
@@ -94,8 +238,8 @@
     }
 
     .badge-xai {
-      background: rgba(204, 255, 0, 0.12);
-      border: 1px solid rgba(204, 255, 0, 0.3);
+      background: rgba(204, 255, 0, 0.14);
+      border: 1px solid rgba(204, 255, 0, 0.4);
       color: var(--neon-lime);
       padding: 5px 12px;
       border-radius: 20px;
@@ -103,27 +247,110 @@
       font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
+      animation: glowLime 2.5s infinite;
     }
 
-    .pulse {
+    .pulse-dot {
       width: 7px;
       height: 7px;
       background: var(--neon-lime);
       border-radius: 50%;
-      animation: pulse 1.6s infinite;
     }
 
-    @keyframes pulse {
-      0% { transform: scale(0.9); opacity: 0.6; }
-      50% { transform: scale(1.3); opacity: 1; }
-      100% { transform: scale(0.9); opacity: 0.6; }
+    /* Statement Ingestion & Gemini Training Card */
+    .ingest-card {
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(139, 92, 246, 0.4);
+      background: linear-gradient(135deg, rgba(95, 37, 159, 0.35) 0%, rgba(20, 10, 40, 0.6) 100%);
+    }
+
+    .ingest-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .ingest-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ingest-desc {
+      font-size: 11.5px;
+      color: var(--text-sub);
+      line-height: 1.4;
+      margin-bottom: 12px;
+    }
+
+    .ingest-actions-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .ingest-btn {
+      flex: 1;
+      min-width: 130px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 12px;
+      padding: 10px 8px;
+      color: #fff;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .ingest-btn:active {
+      transform: scale(0.96);
+      background: rgba(139, 92, 246, 0.3);
+    }
+
+    .ingest-btn.highlight {
+      background: linear-gradient(135deg, var(--phonepe-light), var(--phonepe-purple));
+      border-color: rgba(139, 92, 246, 0.6);
+      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+    }
+
+    .ingest-btn.emerald {
+      background: linear-gradient(135deg, rgba(0, 208, 156, 0.25), rgba(0, 208, 156, 0.08));
+      border-color: rgba(0, 208, 156, 0.4);
+      color: #E6FFF8;
+    }
+
+    .paste-csv-box {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 8px 10px;
+      color: #fff;
+      font-size: 11px;
+      font-family: monospace;
+      outline: none;
+      resize: vertical;
+      min-height: 54px;
+      margin-bottom: 8px;
+      display: none;
     }
 
     /* Hero Runway Widget */
     .hero-card {
       padding: 20px;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
       position: relative;
       overflow: hidden;
     }
@@ -146,10 +373,10 @@
     }
 
     .runway-label {
-      font-size: 12px;
+      font-size: 11.5px;
       color: var(--text-sub);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
     }
 
     .burn-pill {
@@ -184,11 +411,11 @@
     /* Interactive Simulator */
     .simulator-box {
       padding: 18px;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
 
     .box-title {
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 700;
       color: #fff;
       display: flex;
@@ -217,7 +444,7 @@
     input[type=range] {
       width: 100%;
       -webkit-appearance: none;
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.14);
       height: 6px;
       border-radius: 3px;
       outline: none;
@@ -225,30 +452,32 @@
 
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
       background: var(--neon-lime);
-      box-shadow: 0 0 10px rgba(204, 255, 0, 0.6);
+      box-shadow: 0 0 12px rgba(204, 255, 0, 0.7);
       cursor: pointer;
     }
 
     /* Tabs */
     .engine-nav {
       display: flex;
-      background: rgba(0, 0, 0, 0.4);
+      background: rgba(0, 0, 0, 0.45);
       padding: 4px;
       border-radius: 14px;
       gap: 4px;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
       border: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+      z-index: 1;
     }
 
     .engine-tab {
       flex: 1;
       padding: 10px 4px;
       text-align: center;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 700;
       color: var(--text-sub);
       border-radius: 10px;
@@ -259,7 +488,7 @@
     .engine-tab.active {
       background: linear-gradient(135deg, var(--phonepe-purple), #4a148c);
       color: #fff;
-      box-shadow: 0 4px 12px rgba(103, 57, 183, 0.4);
+      box-shadow: 0 4px 14px rgba(103, 57, 183, 0.45);
     }
 
     /* XAI Flow Tree */
@@ -268,11 +497,11 @@
       margin-bottom: 10px;
       position: relative;
       cursor: pointer;
-      transition: transform 0.2s;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
-    .xai-node:hover {
-      transform: translateY(-2px);
+    .xai-node:active {
+      transform: scale(0.98);
     }
 
     .node-header {
@@ -309,30 +538,31 @@
 
     .node-arrow {
       text-align: center;
-      color: var(--phonepe-light);
-      font-size: 14px;
+      color: var(--phonepe-accent);
+      font-size: 13px;
       margin: -4px 0 6px;
-      opacity: 0.7;
+      opacity: 0.85;
+      font-weight: 700;
     }
 
     /* Roast & Rescue */
     .roast-card {
-      border: 1px solid rgba(255, 71, 87, 0.3);
+      border: 1px solid rgba(255, 71, 87, 0.35);
       padding: 16px;
       margin-bottom: 14px;
-      background: linear-gradient(135deg, rgba(255, 71, 87, 0.08) 0%, rgba(0, 0, 0, 0.3) 100%);
+      background: linear-gradient(135deg, rgba(255, 71, 87, 0.1) 0%, rgba(0, 0, 0, 0.35) 100%);
     }
 
     .rescue-card {
-      border: 1px solid rgba(0, 208, 156, 0.3);
+      border: 1px solid rgba(0, 208, 156, 0.35);
       padding: 16px;
       margin-bottom: 14px;
-      background: linear-gradient(135deg, rgba(0, 208, 156, 0.08) 0%, rgba(0, 0, 0, 0.3) 100%);
+      background: linear-gradient(135deg, rgba(0, 208, 156, 0.1) 0%, rgba(0, 0, 0, 0.35) 100%);
     }
 
     .cta-btn {
       width: 100%;
-      padding: 12px;
+      padding: 13px;
       background: linear-gradient(135deg, var(--neon-lime), #8CE000);
       color: #000;
       border: none;
@@ -340,41 +570,447 @@
       font-weight: 800;
       font-size: 13px;
       cursor: pointer;
-      box-shadow: 0 4px 16px rgba(204, 255, 0, 0.3);
+      box-shadow: 0 4px 18px rgba(204, 255, 0, 0.35);
       margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     .cta-btn:active {
-      transform: scale(0.98);
+      transform: scale(0.97);
+    }
+
+    /* ========================================================
+       AI STATEMENT ANALYSIS & BANKRUPTCY REPORT POP-UP MODAL
+       ======================================================== */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(5, 3, 12, 0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 100;
+      padding: 16px;
+      overflow-y: auto;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-content {
+      width: 100%;
+      max-width: 480px;
+      background: linear-gradient(145deg, #180e33 0%, #110924 50%, #0a0518 100%);
+      border: 1.5px solid rgba(139, 92, 246, 0.55);
+      border-radius: 24px;
+      padding: 22px 18px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(124, 58, 237, 0.25);
+      animation: modalPopIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      position: relative;
+      margin: auto;
+    }
+
+    @keyframes modalPopIn {
+      0% {
+        transform: scale(0.85) translateY(24px);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 800;
+      transition: background 0.2s;
+    }
+
+    .modal-close-btn:active {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .modal-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10.5px;
+      font-weight: 800;
+      color: var(--neon-lime);
+      background: rgba(204, 255, 0, 0.12);
+      border: 1px solid rgba(204, 255, 0, 0.35);
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 4px;
+      line-height: 1.25;
+    }
+
+    .modal-subtitle {
+      font-size: 11.5px;
+      color: var(--text-sub);
+      margin-bottom: 16px;
+    }
+
+    /* Bankruptcy Hazard Gauge in Modal */
+    .hazard-box {
+      background: rgba(255, 71, 87, 0.1);
+      border: 1px solid rgba(255, 71, 87, 0.35);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .hazard-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .hazard-label {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: var(--coral-red);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hazard-percent {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--coral-red);
+    }
+
+    .hazard-bar-bg {
+      width: 100%;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .hazard-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #FFAA00, #FF4757);
+      border-radius: 6px;
+      width: 78%;
+      transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+    }
+
+    .hazard-metrics-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .hazard-metrics-row strong {
+      color: #fff;
+    }
+
+    /* Behavioral Roast in Modal */
+    .modal-roast-box {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.18) 0%, rgba(20, 10, 40, 0.4) 100%);
+      border: 1px solid rgba(139, 92, 246, 0.4);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .roast-title-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .roast-badge {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--coral-red);
+      background: rgba(255, 71, 87, 0.15);
+      padding: 3px 8px;
+      border-radius: 8px;
+    }
+
+    .roast-text {
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: #FFFFFF;
+      margin-bottom: 10px;
+    }
+
+    .nudge-text {
+      font-size: 11.5px;
+      line-height: 1.4;
+      color: #D8B4FE;
+      background: rgba(0, 0, 0, 0.25);
+      border-left: 3px solid var(--phonepe-light);
+      padding: 8px 10px;
+      border-radius: 0 10px 10px 0;
+    }
+
+    /* Smooth CSS Animated Dividend Opportunity Chart */
+    .dividend-chart-card {
+      background: linear-gradient(135deg, rgba(0, 208, 156, 0.12) 0%, rgba(10, 30, 25, 0.45) 100%);
+      border: 1px solid rgba(0, 208, 156, 0.35);
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+
+    .dividend-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .dividend-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--emerald-green);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .coin-icon {
+      font-size: 16px;
+      animation: coinTwinkle 2.5s infinite;
+      display: inline-block;
+    }
+
+    .dividend-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .div-stat-tile {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 8px 10px;
+    }
+
+    .div-stat-lbl {
+      font-size: 10px;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .div-stat-val {
+      font-size: 15px;
+      font-weight: 900;
+      color: #fff;
+      margin-top: 2px;
+    }
+
+    .div-stat-val.gain {
+      color: var(--emerald-green);
+    }
+
+    /* Animated CSS Pillar Graph */
+    .chart-pillars-wrap {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-around;
+      height: 120px;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 14px;
+      padding: 12px 8px 6px;
+      margin-bottom: 12px;
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+    }
+
+    .pillar-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 28%;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .pillar-val {
+      font-size: 10px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 4px;
+      text-align: center;
+    }
+
+    .pillar-bar {
+      width: 100%;
+      border-radius: 8px 8px 3px 3px;
+      transition: height 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+    }
+
+    .pillar-bar.spent {
+      background: linear-gradient(180deg, #FF4757, #991b1b);
+      height: 55%;
+      box-shadow: 0 0 10px rgba(255, 71, 87, 0.35);
+    }
+
+    .pillar-bar.growth3y {
+      background: linear-gradient(180deg, #A855F7, #6B21A8);
+      height: 75%;
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.35);
+    }
+
+    .pillar-bar.growth5y {
+      background: linear-gradient(180deg, #00D09C, #065F46);
+      height: 98%;
+      box-shadow: 0 0 14px rgba(0, 208, 156, 0.5);
+    }
+
+    .pillar-lbl {
+      font-size: 9.5px;
+      color: var(--text-sub);
+      margin-top: 6px;
+      text-align: center;
+      line-height: 1.1;
+    }
+
+    /* Modal Action Buttons */
+    .modal-btn-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-secondary {
+      flex: 1;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .btn-secondary:active {
+      background: rgba(255, 255, 255, 0.2);
     }
   </style>
 </head>
 <body>
 
+  <!-- Ambient Light Orbs -->
+  <div class="ambient-glow-1"></div>
+  <div class="ambient-glow-2"></div>
+
+  <!-- Top In-Tab Behavioral & Bankruptcy Notification Banner -->
+  <div class="notif-banner" id="notifBanner" onclick="openReportModal()">
+    <div class="notif-badge">⚠️</div>
+    <div class="notif-text" id="notifBannerText">
+      <strong>BANKRUPTCY ALERT:</strong> At current burn, zero-cash horizon arrives in <strong>11.4 Days</strong>! Tap to view AI Audit & Dividend Chart.
+    </div>
+    <div class="notif-action-chip">VIEW XAI ➔</div>
+  </div>
+
   <!-- Top Header -->
   <div class="header">
     <div class="brand">
-      <div class="brand-icon">R</div>
+      <div class="brand-icon">⚡</div>
       <div>
         <div class="brand-title">RUNWAY</div>
-        <div class="brand-subtitle">Autonomous XAI Engine</div>
+        <div class="brand-subtitle">Autonomous Finance XAI</div>
       </div>
     </div>
-    <div class="badge-xai">
-      <div class="pulse"></div>
-      ACTIVE XAI
+    <div class="badge-xai" onclick="openReportModal()">
+      <div class="pulse-dot"></div>
+      GEMINI AUDIT ACTIVE
     </div>
   </div>
 
+  <!-- Statement Ingestion & Gemini Training Section -->
+  <div class="glass ingest-card sheen-card">
+    <div class="ingest-header">
+      <div class="ingest-title">
+        <span>📂</span> Statement Ingestion & AI Training
+      </div>
+      <span style="font-size: 10px; color: var(--neon-lime); font-weight: 800; background: rgba(204,255,0,0.12); padding: 2px 8px; border-radius: 10px;">
+        CSV / EXCEL READY
+      </span>
+    </div>
+    <div class="ingest-desc">
+      Import bank statements or tap quick demo files to train Gemini API on spending leaks, calibrate the bankruptcy meter, and reveal lost dividend wealth.
+    </div>
+
+    <!-- Quick Ingestion Buttons -->
+    <div class="ingest-actions-row">
+      <button class="ingest-btn highlight" onclick="triggerDeviceFilePicker()">
+        <span>📁</span> Browse CSV / Excel
+      </button>
+      <button class="ingest-btn emerald" onclick="importDemoStatement('PhonePe UPI')">
+        <span>📱</span> PhonePe UPI Demo
+      </button>
+      <button class="ingest-btn" onclick="importDemoStatement('HDFC Bank')">
+        <span>🏛️</span> HDFC Bank Demo
+      </button>
+      <button class="ingest-btn" onclick="togglePasteCsv()">
+        <span>✍️</span> Paste CSV Rows
+      </button>
+    </div>
+
+    <!-- Collapsible CSV Paste Box -->
+    <textarea id="pasteCsvBox" class="paste-csv-box" placeholder="e.g.&#10;Swiggy, 420&#10;Starbucks, 380&#10;Zara Clothing, 2800&#10;Salary Credit, 25000"></textarea>
+    <button id="parseCsvBtn" class="cta-btn" style="display: none; margin-bottom: 8px;" onclick="submitPastedCsv()">
+      <span>🧠</span> Parse & Train Gemini Model
+    </button>
+  </div>
+
   <!-- Hero 30-Day Runway Gauge -->
-  <div class="glass hero-card glass-highlight">
+  <div class="glass hero-card glass-highlight sheen-card">
     <div class="hero-top">
       <div>
-        <div class="runway-label">Projected Runway</div>
-        <div class="runway-number" id="runwayDays">24.5<span style="font-size: 20px; font-weight: 600; color: #fff;"> Days</span></div>
+        <div class="runway-label">Projected Runway Horizon</div>
+        <div class="runway-number" id="runwayDays">18.4<span style="font-size: 20px; font-weight: 600; color: #fff;"> Days</span></div>
       </div>
       <div class="burn-pill" id="burnStatus">
-        <div>₹640 / day</div>
+        <div id="burnVelocityText">₹840 / day</div>
         <div style="font-size: 9px; opacity: 0.85;">BURN VELOCITY</div>
       </div>
     </div>
@@ -389,53 +1025,59 @@
           </linearGradient>
           <linearGradient id="strokeGradient" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stop-color="#00D09C"/>
-            <stop offset="60%" stop-color="#8B5CF6"/>
+            <stop offset="55%" stop-color="#8B5CF6"/>
             <stop offset="100%" stop-color="#FF4757"/>
           </linearGradient>
         </defs>
         <!-- Area fill -->
-        <path id="areaFill" d="M 0,20 Q 80,25 160,45 T 320,80 L 320,90 L 0,90 Z" fill="url(#curveGradient)"/>
+        <path id="areaFill" d="M 0,15 Q 80,25 160,50 T 320,82 L 320,90 L 0,90 Z" fill="url(#curveGradient)"/>
         <!-- Curve line -->
-        <path id="curveLine" d="M 0,20 Q 80,25 160,45 T 320,80" stroke="url(#strokeGradient)" stroke-width="3" stroke-linecap="round"/>
+        <path id="curveLine" d="M 0,15 Q 80,25 160,50 T 320,82" stroke="url(#strokeGradient)" stroke-width="3.5" stroke-linecap="round"/>
         <!-- Horizon guideline -->
-        <line x1="0" y1="80" x2="320" y2="80" stroke="rgba(255,255,255,0.15)" stroke-dasharray="4 4" stroke-width="1"/>
-        <text x="5" y="76" fill="#A19EB5" font-size="9">Day 0: ₹5,000</text>
-        <text x="235" y="76" fill="#FF4757" font-size="9">Day 25: Zero-Cash</text>
+        <line x1="0" y1="82" x2="320" y2="82" stroke="rgba(255,255,255,0.18)" stroke-dasharray="4 4" stroke-width="1"/>
+        <text x="5" y="77" fill="#A19EB5" font-size="9">Day 0: ₹18,400</text>
+        <text x="220" y="77" fill="#FF4757" font-size="9">Day 18: Depletion Horizon</text>
       </svg>
     </div>
 
     <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-sub);">
-      <span>Discretionary: <strong style="color: #fff;">34%</strong></span>
-      <span>Fixed Needs: <strong style="color: #fff;">48%</strong></span>
-      <span>Autonomous Buffer: <strong style="color: var(--neon-lime);">18%</strong></span>
+      <span>Discretionary: <strong style="color: #FF7B88;" id="discSpendPercent">42%</strong></span>
+      <span>Fixed Needs: <strong style="color: #fff;" id="fixedSpendPercent">44%</strong></span>
+      <span>Dividend Buffer: <strong style="color: var(--neon-lime);" id="bufferPercent">14%</strong></span>
     </div>
   </div>
 
-  <!-- Interactive Simulator Card -->
+  <!-- Interactive What-If Simulator Card -->
   <div class="glass simulator-box">
     <div class="box-title">
-      <span>🎛️</span> What-If Runway Simulator
+      <span>🎛️</span> What-If Runway & Dividend Simulator
     </div>
 
     <div class="slider-row">
       <div class="slider-labels">
-        <span>Cut Impulse Food Spends</span>
-        <span class="slider-value" id="cutSpendVal">20%</span>
+        <span>Cut Baseless Impulse Purchases</span>
+        <span class="slider-value" id="cutSpendVal">25%</span>
       </div>
-      <input type="range" id="cutSpendSlider" min="0" max="60" value="20" oninput="updateSimulation()">
+      <input type="range" id="cutSpendSlider" min="0" max="60" value="25" oninput="updateSimulation()">
     </div>
 
     <div class="slider-row">
       <div class="slider-labels">
-        <span>Extend Weekend Curfew</span>
-        <span class="slider-value" id="curfewVal">+3 Days</span>
+        <span>Divert to Daily Dividend Auto-Invest</span>
+        <span class="slider-value" id="curfewVal">₹250 / day</span>
       </div>
-      <input type="range" id="curfewSlider" min="0" max="10" value="3" oninput="updateSimulation()">
+      <input type="range" id="curfewSlider" min="0" max="1000" step="50" value="250" oninput="updateSimulation()">
     </div>
 
-    <div style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 10px; display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-      <span style="font-size: 11px; color: var(--text-sub);">New Unlocked Runway:</span>
-      <span style="font-size: 14px; font-weight: 800; color: var(--emerald-green);" id="extraDays">+6.2 Days Unlocked</span>
+    <div style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+      <div>
+        <div style="font-size: 10px; color: var(--text-sub); text-transform: uppercase;">UNLOCKED RUNWAY:</div>
+        <div style="font-size: 14px; font-weight: 800; color: var(--emerald-green);" id="extraDays">+7.4 Days Unlocked</div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-size: 10px; color: var(--text-sub); text-transform: uppercase;">YEARLY DIVIDEND PAYOUT:</div>
+        <div style="font-size: 14px; font-weight: 800; color: var(--gold-dividend);" id="simDividendText">₹7,300 / year</div>
+      </div>
     </div>
   </div>
 
@@ -448,58 +1090,58 @@
 
   <!-- Tab 1: Visual XAI Logic Flow Tree -->
   <div id="tab-xai">
-    <div class="glass xai-node">
+    <div class="glass xai-node" onclick="openReportModal()">
       <div class="node-header">
         <span class="node-badge data">1. Ingested Stream</span>
-        <span style="font-size: 11px; color: #38BDF8;">100% Fidelity</span>
+        <span style="font-size: 11px; color: #38BDF8;">6 Statement Txns</span>
       </div>
-      <div class="node-title">Transaction: ₹340 @ Swiggy Late Night</div>
-      <div class="node-desc">Time: 11:42 PM • Category: Dining • Context: "Bored scrolling after study session"</div>
+      <div class="node-title">Baseless Leakage: ₹3,240 on Delivery & Leisure</div>
+      <div class="node-desc">Transactions: Swiggy (₹420), Starbucks (₹380), Zara (₹2,100), Blinkit (₹340).</div>
     </div>
     <div class="node-arrow">▼ Rule Evaluation</div>
 
-    <div class="glass xai-node">
+    <div class="glass xai-node" onclick="openReportModal()">
       <div class="node-header">
         <span class="node-badge rule">2. Behavioral Pattern</span>
-        <span style="font-size: 11px; color: #F472B6;">Confidence 94%</span>
+        <span style="font-size: 11px; color: #F472B6;">Confidence 96%</span>
       </div>
-      <div class="node-title">Dopamine-Craving Vulnerability Flagged</div>
-      <div class="node-desc">Historical Correlation: 88% of late-night orders regret rating > 4/5 next morning.</div>
+      <div class="node-title">Present-Bias & Instant Gratification Detected</div>
+      <div class="node-desc">Psychological pattern: User trades future financial sovereignty for 12 minutes of fleeting dopamine.</div>
     </div>
-    <div class="node-arrow">▼ Explainable Weights</div>
+    <div class="node-arrow">▼ Opportunity Cost & Bankruptcy</div>
 
-    <div class="glass xai-node">
+    <div class="glass xai-node" onclick="openReportModal()">
       <div class="node-header">
-        <span class="node-badge calc">3. Runway Impact Model</span>
-        <span style="font-size: 11px; color: #FACC15;">-14 Hrs Runway</span>
+        <span class="node-badge calc">3. Bankruptcy & Dividend Impact</span>
+        <span style="font-size: 11px; color: #FACC15;">78% Hazard Score</span>
       </div>
-      <div class="node-title">Burn Acceleration: +₹340 / week multiplier</div>
-      <div class="node-desc">Reduces end-of-month buffer by 6.8%. Threatens gadget replacement fund.</div>
+      <div class="node-title">Runway Horizon Reduced by 5.2 Days</div>
+      <div class="node-desc">Lost Dividend Wealth: ₹1,472/year in dividends forfeited to unnecessary delivery fees.</div>
     </div>
     <div class="node-arrow">▼ Autonomous Directive</div>
 
-    <div class="glass xai-node glass-highlight">
+    <div class="glass xai-node glass-highlight" onclick="openReportModal()">
       <div class="node-header">
-        <span class="node-badge act">4. Autonomous Action</span>
+        <span class="node-badge act">4. Autonomous Directive</span>
         <span style="font-size: 11px; color: var(--neon-lime);">Intervention Active</span>
       </div>
-      <div class="node-title">Deploy Health-Swap Shield & Trigger ₹150 Micro-Save</div>
-      <div class="node-desc">Suggest Greek yogurt/water alternate + transfer saved amount into Liquid Reserve.</div>
+      <div class="node-title">Deploy Behavioral Pop-Up & Divert to Dividend Index</div>
+      <div class="node-desc">Tap to view full Gemini roast, month-end bankruptcy meter, and animated dividend growth chart.</div>
     </div>
   </div>
 
   <!-- Tab 2: Roast & Rescue Dual Engine -->
   <div id="tab-roast" style="display: none;">
-    <div class="glass roast-card">
+    <div class="glass roast-card sheen-card">
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
         <span style="font-size: 18px;">🔥</span>
-        <span style="font-weight: 800; font-size: 13px; color: var(--coral-red);">THE XAI ROAST</span>
+        <span style="font-weight: 800; font-size: 13px; color: var(--coral-red);">GEMINI BEHAVIORAL ROAST</span>
       </div>
-      <p style="font-size: 13px; line-height: 1.45; color: #fff;">
-        "You logged 4 midnight bubble teas this week and wondered why your runway is choking. Your bank account is running an endurance race with a sprained ankle, but hey, at least your boba pearls had premium brown sugar!"
+      <p style="font-size: 13px; line-height: 1.45; color: #fff;" id="inlineRoastText">
+        "You logged 4 midnight takeout orders and bought luxury iced lattes while your savings account is crying in fetal position. Your bank balance has trust issues with you!"
       </p>
-      <div style="font-size: 11px; color: var(--coral-red); margin-top: 8px; font-weight: 600;">
-        Impact: -1.8 Days Runway Eaten
+      <div style="font-size: 11.5px; color: #FFB3BA; margin-top: 8px; font-weight: 600;">
+        Impact: -2.8 Days of Financial Sovereignty Vaporized
       </div>
     </div>
 
@@ -509,9 +1151,9 @@
         <span style="font-weight: 800; font-size: 13px; color: var(--emerald-green);">AUTONOMOUS RESCUE PROTOCOL</span>
       </div>
       <p style="font-size: 12.5px; line-height: 1.45; color: #fff; margin-bottom: 8px;">
-        1. Freeze discretionary food card until Friday night.<br>
-        2. Auto-divert ₹450 from weekend leisure to re-anchor the 30-day runway target.<br>
-        3. Earn +80 XP bonus by logging zero junk spends for 48 hours.
+        1. Auto-freeze discretionary takeout card for 72 hours.<br>
+        2. Divert ₹500 from leisure budget into high-yield dividend portfolio.<br>
+        3. Recalibrate runway to 30 full days before month-end reset.
       </p>
       <button class="cta-btn" onclick="applyRescue()">EXECUTE RESCUE ACTION</button>
     </div>
@@ -532,45 +1174,172 @@
       <div style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 8px;">Financial Fingerprint Health</div>
       <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
         <span style="color: var(--text-sub);">Liquidity Buffer Index</span>
-        <span style="font-weight: 700; color: var(--emerald-green);">7.8 / 10</span>
+        <span style="font-weight: 700; color: var(--emerald-green);">7.4 / 10</span>
       </div>
       <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
         <span style="color: var(--text-sub);">Impulse Vulnerability Ratio</span>
-        <span style="font-weight: 700; color: var(--coral-red);">High (Fri-Sat)</span>
+        <span style="font-weight: 700; color: var(--coral-red);">High (Fri-Sat Nights)</span>
       </div>
       <div style="display: flex; justify-content: space-between; font-size: 12px;">
-        <span style="color: var(--text-sub);">Autonomous Savings Velocity</span>
-        <span style="font-weight: 700; color: var(--neon-lime);">₹180 / day</span>
+        <span style="color: var(--text-sub);">Dividend Wealth Momentum</span>
+        <span style="font-weight: 700; color: var(--gold-dividend);">₹250 / day Auto-Invest</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       BEAUTIFUL POP-UP MODAL: BANKRUPTCY METER, GEMINI ROAST &
+       SMOOTH CSS ANIMATED DIVIDEND CHART
+       ======================================================== -->
+  <div class="modal-backdrop" id="reportModal" onclick="closeModalOnBackdrop(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-close-btn" onclick="closeReportModal()">✕</div>
+
+      <div class="modal-tag">⚡ RUNWAY XAI STATEMENT AUDIT</div>
+      <div class="modal-title" id="modalReportTitle">Gemini Behavioral & Bankruptcy Report</div>
+      <div class="modal-subtitle">Trained on your uploaded CSV statement transactions</div>
+
+      <!-- 1. Bankruptcy Hazard Meter & Month-End Analysis -->
+      <div class="hazard-box">
+        <div class="hazard-top">
+          <div class="hazard-label">
+            <span>🚨</span>
+            <span id="modalHazardLabel">CRITICAL BANKRUPTCY HAZARD</span>
+          </div>
+          <div class="hazard-percent" id="modalHazardPercent">78%</div>
+        </div>
+
+        <div class="hazard-bar-bg">
+          <div class="hazard-bar-fill" id="modalHazardFill"></div>
+        </div>
+
+        <div class="hazard-metrics-row">
+          <span>Depletion Horizon: <strong id="modalHorizonDays">11.4 Days</strong></span>
+          <span>Projected Month-End: <strong style="color: #FF7B88;" id="modalMonthEndVal">-₹4,800 Deficit</strong></span>
+        </div>
+      </div>
+
+      <!-- 2. Gemini Psychological Roast & Nudge -->
+      <div class="modal-roast-box">
+        <div class="roast-title-row">
+          <span>🔥</span>
+          <span style="font-size: 12px; font-weight: 800; color: #fff;">GEMINI BEHAVIORAL ROAST</span>
+          <span class="roast-badge" id="modalLeakageBadge">Late Night Takeout</span>
+        </div>
+        <p class="roast-text" id="modalRoastText">
+          "Look at you spending ₹3,200 on artisanal cold brew and rush-hour cabs while your balance screams in terror. Swiggy delivery riders recognize your doorbell chime by heart!"
+        </p>
+        <div class="nudge-text" id="modalNudgeText">
+          🧠 <strong>Psychological Reality:</strong> Every baseless purchase steals 14 hours of compound dividend freedom. Your dopamine fades in 12 minutes; your credit card regret lasts 30 days.
+        </div>
+      </div>
+
+      <!-- 3. Compound Dividend Opportunity Cost Chart with Smooth CSS Animation -->
+      <div class="dividend-chart-card">
+        <div class="dividend-top">
+          <div class="dividend-title">
+            <span class="coin-icon">💰</span>
+            <span>IF THIS MONEY WAS INVESTED INSTEAD:</span>
+          </div>
+          <span style="font-size: 10px; color: var(--gold-dividend); font-weight: 800;">8% YIELD + 14% CAGR</span>
+        </div>
+
+        <!-- Dividend Stats Grid -->
+        <div class="dividend-stats-grid">
+          <div class="div-stat-tile">
+            <div class="div-stat-lbl">Yearly Passive Dividends</div>
+            <div class="div-stat-val gain" id="modalYearlyDiv">₹1,472 / yr</div>
+          </div>
+          <div class="div-stat-tile">
+            <div class="div-stat-lbl">5-Yr Compound Wealth</div>
+            <div class="div-stat-val gain" id="modalWealth5y">₹35,840</div>
+          </div>
+        </div>
+
+        <!-- Animated CSS Pillar Graph -->
+        <div class="chart-pillars-wrap">
+          <!-- Pillar 1: Impulse Waste -->
+          <div class="pillar-col">
+            <div class="pillar-val" style="color: #FF7B88;" id="pillarValSpent">₹18,400</div>
+            <div class="pillar-bar spent" id="pillarBarSpent"></div>
+            <div class="pillar-lbl">Baseless<br>Spends</div>
+          </div>
+
+          <!-- Pillar 2: 3-Year Compounding -->
+          <div class="pillar-col">
+            <div class="pillar-val" style="color: #D8B4FE;" id="pillarVal3y">₹26,500</div>
+            <div class="pillar-bar growth3y" id="pillarBar3y"></div>
+            <div class="pillar-lbl">3-Yr Dividend<br>Growth</div>
+          </div>
+
+          <!-- Pillar 3: 5-Year Wealth -->
+          <div class="pillar-col">
+            <div class="pillar-val" style="color: #00D09C;" id="pillarVal5y">₹35,840</div>
+            <div class="pillar-bar growth5y" id="pillarBar5y"></div>
+            <div class="pillar-lbl">5-Yr Wealth<br>(Compounded)</div>
+          </div>
+        </div>
+
+        <div style="font-size: 11px; color: var(--text-sub); text-align: center; line-height: 1.35;">
+          Instead of empty takeout boxes, this generates <strong style="color: #fff;">₹122/month of free dividends</strong> deposited directly into your bank forever!
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="modal-btn-row">
+        <button class="cta-btn" style="flex: 1.4; margin-top: 0;" onclick="applyRescueFromModal()">
+          <span>🛡️</span> Activate Auto-Invest Shield
+        </button>
+        <button class="btn-secondary" onclick="closeReportModal()">
+          Dismiss
+        </button>
       </div>
     </div>
   </div>
 
   <script>
-    let baseRunway = 24.5;
-    let baseBurn = 640;
+    // Live State
+    let currentBalance = 18400;
+    let baseRunway = 18.4;
+    let baseBurn = 840;
+    let impulseLeakage = 3240;
+
+    // Report State
+    let latestReport = {
+      title: "Gemini Behavioral & Bankruptcy Report",
+      bankruptcyRiskPercent: 78,
+      daysRemaining: 11.4,
+      funnyRoast: "Look at you spending ₹3,200 on artisanal iced matcha and rush-hour cabs while your balance screams in terror. Swiggy delivery riders know your doorbell chime by heart!",
+      psychologicalNudge: "Every baseless purchase steals 14 hours of compound dividend freedom. Your dopamine fades in 12 minutes; your credit card debt burns for 30 days.",
+      totalWastedOnImpulse: 18400,
+      projectedDividendsYearly: 1472,
+      projectedWealth5Yrs: 35840,
+      topLeakageCategory: "Late Night Delivery & Dining",
+      monthlyBurn: 25200
+    };
 
     function updateSimulation() {
       const cut = parseInt(document.getElementById('cutSpendSlider').value);
-      const curfew = parseInt(document.getElementById('curfewSlider').value);
+      const autoInvestDaily = parseInt(document.getElementById('curfewSlider').value);
 
       document.getElementById('cutSpendVal').innerText = cut + '%';
-      document.getElementById('curfewVal').innerText = '+' + curfew + ' Days';
+      document.getElementById('curfewVal').innerText = '₹' + autoInvestDaily + ' / day';
 
-      // Calculate extra days
-      const extraFromCut = (cut / 10) * 1.8;
-      const extraFromCurfew = curfew * 0.9;
-      const totalExtra = (extraFromCut + extraFromCurfew).toFixed(1);
+      // Extra runway calculated dynamically
+      const extraDays = ((cut / 10) * 1.8 + (autoInvestDaily / 200) * 0.9).toFixed(1);
+      document.getElementById('extraDays').innerText = '+' + extraDays + ' Days Unlocked';
 
-      document.getElementById('extraDays').innerText = '+' + totalExtra + ' Days Unlocked';
-
-      const newRunway = (baseRunway + parseFloat(totalExtra)).toFixed(1);
+      const newRunway = (baseRunway + parseFloat(extraDays)).toFixed(1);
       document.getElementById('runwayDays').innerHTML = newRunway + '<span style="font-size: 20px; font-weight: 600; color: #fff;"> Days</span>';
 
-      const newBurn = Math.max(320, Math.round(baseBurn * (1 - (cut * 0.007))));
-      const burnEl = document.getElementById('burnStatus');
-      burnEl.innerHTML = `<div>₹${newBurn} / day</div><div style="font-size: 9px; opacity: 0.85;">BURN VELOCITY</div>`;
+      const simAnnualDiv = Math.round(autoInvestDaily * 365 * 0.08);
+      document.getElementById('simDividendText').innerText = '₹' + simAnnualDiv.toLocaleString('en-IN') + ' / year';
 
-      if (newBurn <= 480) {
+      const newBurn = Math.max(320, Math.round(baseBurn * (1 - (cut * 0.008))));
+      const burnEl = document.getElementById('burnStatus');
+      document.getElementById('burnVelocityText').innerText = '₹' + newBurn + ' / day';
+
+      if (newBurn <= 500) {
         burnEl.className = 'burn-pill healthy';
       } else {
         burnEl.className = 'burn-pill';
@@ -590,21 +1359,202 @@
       });
     }
 
+    function togglePasteCsv() {
+      const box = document.getElementById('pasteCsvBox');
+      const btn = document.getElementById('parseCsvBtn');
+      if (box.style.display === 'block') {
+        box.style.display = 'none';
+        btn.style.display = 'none';
+      } else {
+        box.style.display = 'block';
+        btn.style.display = 'flex';
+        box.focus();
+      }
+    }
+
+    function submitPastedCsv() {
+      const text = document.getElementById('pasteCsvBox').value.trim();
+      if (!text) {
+        alert("Please paste some CSV rows first (e.g. Swiggy, 420)");
+        return;
+      }
+      if (window.AndroidBridge && window.AndroidBridge.importCsvContent) {
+        window.AndroidBridge.importCsvContent(text);
+      } else {
+        simulateCsvAnalysis(text);
+      }
+    }
+
+    function triggerDeviceFilePicker() {
+      if (window.AndroidBridge && window.AndroidBridge.pickFile) {
+        window.AndroidBridge.pickFile();
+      } else {
+        // Fallback file input for testing
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.csv,.xlsx,.xls,text/csv';
+        input.onchange = e => {
+          const file = e.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = ev => simulateCsvAnalysis(ev.target.result);
+            reader.readAsText(file);
+          }
+        };
+        input.click();
+      }
+    }
+
+    function importDemoStatement(bank) {
+      if (window.AndroidBridge && window.AndroidBridge.importDemoStatement) {
+        window.AndroidBridge.importDemoStatement(bank);
+      } else {
+        simulateDemoImport(bank);
+      }
+    }
+
+    function simulateDemoImport(bank) {
+      const sampleRoasts = [
+        "You logged 4 late-night burger orders and 2 online shopping splurges. Your bank account is surviving on glucose drops and adrenaline!",
+        "Your statement reveals an emotional relationship with quick commerce. If you invested this into dividend stocks, you'd own a piece of the grocery chain instead of paying surge fees!"
+      ];
+      const roast = sampleRoasts[Math.floor(Math.random() * sampleRoasts.length)];
+      
+      latestReport = {
+        title: bank + " Statement XAI Audit",
+        bankruptcyRiskPercent: 82,
+        daysRemaining: 10.2,
+        funnyRoast: roast,
+        psychologicalNudge: "Present bias convinces you that ₹600 spent today doesn't matter. Over 5 years with 8% dividends and 14% CAGR, that habit costs you over ₹42,000.",
+        totalWastedOnImpulse: 16800,
+        projectedDividendsYearly: 1344,
+        projectedWealth5Yrs: 32400,
+        topLeakageCategory: bank + " Quick Commerce & Food",
+        monthlyBurn: 28400
+      };
+
+      populateModal(latestReport);
+      openReportModal();
+    }
+
+    function simulateCsvAnalysis(csvText) {
+      latestReport = {
+        title: "Custom Statement Gemini Audit",
+        bankruptcyRiskPercent: 74,
+        daysRemaining: 13.5,
+        funnyRoast: "We analyzed your custom statement rows. You treat disposable shopping like emergency expenses! Your wallet is officially waving the white flag.",
+        psychologicalNudge: "Channel that impulse impulse into buying dividend assets. An 8% dividend yield pays you every year without working.",
+        totalWastedOnImpulse: 14200,
+        projectedDividendsYearly: 1136,
+        projectedWealth5Yrs: 27500,
+        topLeakageCategory: "Imported Expense Pattern",
+        monthlyBurn: 21000
+      };
+      populateModal(latestReport);
+      openReportModal();
+    }
+
+    function openReportModal() {
+      populateModal(latestReport);
+      const modal = document.getElementById('reportModal');
+      modal.classList.add('open');
+    }
+
+    function closeReportModal() {
+      const modal = document.getElementById('reportModal');
+      modal.classList.remove('open');
+    }
+
+    function closeModalOnBackdrop(e) {
+      if (e.target.id === 'reportModal') {
+        closeReportModal();
+      }
+    }
+
+    function populateModal(report) {
+      if (!report) return;
+      document.getElementById('modalReportTitle').innerText = report.title || "Gemini XAI Audit";
+      document.getElementById('modalHazardPercent').innerText = (report.bankruptcyRiskPercent || 78) + "%";
+      document.getElementById('modalHazardFill').style.width = (report.bankruptcyRiskPercent || 78) + "%";
+      document.getElementById('modalHorizonDays').innerText = (report.daysRemaining ? report.daysRemaining.toFixed(1) : "11.4") + " Days";
+
+      const roast = report.funnyRoast || "You are trading long-term wealth for short-term dopamine hits.";
+      document.getElementById('modalRoastText').innerText = '"' + roast + '"';
+      document.getElementById('inlineRoastText').innerText = '"' + roast + '"';
+
+      if (report.psychologicalNudge) {
+        document.getElementById('modalNudgeText').innerHTML = '🧠 <strong>Psychological Shift:</strong> ' + report.psychologicalNudge;
+      }
+
+      if (report.topLeakageCategory) {
+        document.getElementById('modalLeakageBadge').innerText = report.topLeakageCategory;
+      }
+
+      // Dividend stats
+      const spent = report.totalWastedOnImpulse || 18400;
+      const yearlyDiv = report.projectedDividendsYearly || Math.round(spent * 0.08);
+      const wealth5y = report.projectedWealth5Yrs || Math.round(spent * 1.95);
+      const wealth3y = Math.round(spent * 1.44);
+
+      document.getElementById('modalYearlyDiv').innerText = '₹' + yearlyDiv.toLocaleString('en-IN') + ' / yr';
+      document.getElementById('modalWealth5y').innerText = '₹' + wealth5y.toLocaleString('en-IN');
+
+      // Pillar heights and values
+      document.getElementById('pillarValSpent').innerText = '₹' + Math.round(spent).toLocaleString('en-IN');
+      document.getElementById('pillarVal3y').innerText = '₹' + Math.round(wealth3y).toLocaleString('en-IN');
+      document.getElementById('pillarVal5y').innerText = '₹' + Math.round(wealth5y).toLocaleString('en-IN');
+
+      // Update banner text
+      document.getElementById('notifBannerText').innerHTML = `<strong>BANKRUPTCY ALERT:</strong> Hazard score is <strong>${report.bankruptcyRiskPercent || 78}%</strong>! Depletion in <strong>${(report.daysRemaining || 11.4).toFixed(1)} Days</strong>. Tap to view roast & dividend chart.`;
+    }
+
     function applyRescue() {
       if (window.AndroidBridge && window.AndroidBridge.onApplyRescuePlan) {
         window.AndroidBridge.onApplyRescuePlan();
       } else {
-        alert("Rescue protocol executed! Diverted ₹450 to Autonomous Buffer.");
+        alert("Rescue protocol executed! Diverted ₹500 to Autonomous Dividend Buffer.");
       }
     }
 
-    // Called from Android host via evaluateJavascript if needed
-    function updateDataFromAndroid(balance, totalSpent, allowance) {
+    function applyRescueFromModal() {
+      applyRescue();
+      closeReportModal();
+    }
+
+    // Two-Way Bridge Calls from Android Host
+    function updateDataFromAndroid(balance, totalSpent, allowance, runwayDays, riskPercent, reportJson) {
+      if (balance !== undefined && balance > 0) {
+        currentBalance = balance;
+      }
       if (allowance && allowance > 0) {
-        const dailyBurn = totalSpent > 0 ? (totalSpent / 5) : 300;
+        const dailyBurn = totalSpent > 0 ? (totalSpent / 6) : 550;
         baseBurn = Math.round(dailyBurn);
-        baseRunway = parseFloat(((balance / Math.max(1, dailyBurn))).toFixed(1));
+        baseRunway = runwayDays || parseFloat(((currentBalance / Math.max(1, dailyBurn))).toFixed(1));
         updateSimulation();
+      }
+      if (reportJson) {
+        try {
+          const parsed = (typeof reportJson === 'string') ? JSON.parse(reportJson) : reportJson;
+          latestReport = parsed;
+          populateModal(latestReport);
+        } catch (e) {
+          console.error("Error parsing reportJson:", e);
+        }
+      }
+    }
+
+    function triggerStatementReport(reportJson) {
+      if (reportJson) {
+        try {
+          const parsed = (typeof reportJson === 'string') ? JSON.parse(reportJson) : reportJson;
+          latestReport = parsed;
+          populateModal(latestReport);
+          openReportModal();
+        } catch (e) {
+          console.error("Error triggering statement report:", e);
+        }
+      } else {
+        openReportModal();
       }
     }
   </script>

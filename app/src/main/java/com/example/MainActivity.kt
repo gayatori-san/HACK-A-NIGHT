@@ -228,6 +228,7 @@ fun MainApp(
                             onAddGoal = { goal -> viewModel.addGoal(goal) },
                             onDepositGoal = { id, amt -> viewModel.depositToGoal(id, amt) },
                             onDeleteGoal = { id -> viewModel.deleteGoal(id) },
+                            onToggleCfoMode = { active -> viewModel.setCfoMode(active) },
                             modifier = Modifier.fillMaxSize()
                         )
 
@@ -240,6 +241,8 @@ fun MainApp(
                                 viewModel.updateLogDetails(cat, nec, food, ctx)
                             },
                             onSubmitLog = { viewModel.submitLog() },
+                            onImportCsv = { csv -> viewModel.importCsvContent(csv) },
+                            onImportDemoStatement = { bank -> viewModel.importDemoStatement(bank) },
                             modifier = Modifier.fillMaxSize()
                         )
 
@@ -268,6 +271,9 @@ fun MainApp(
                             uiState = uiState,
                             onBack = { viewModel.setTab("home") },
                             onApplyRescuePlan = { viewModel.applyRunwayRescuePlan() },
+                            onImportDemoStatement = { bank -> viewModel.importDemoStatement(bank) },
+                            onImportCsv = { csv -> viewModel.importCsvContent(csv) },
+                            onDismissStatementReport = { viewModel.dismissStatementReport() },
                             modifier = Modifier.fillMaxSize()
                         )
                     }
