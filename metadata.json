@@ -1,0 +1,6 @@
+{
+  "name": "Habit-Wallet AI",
+  "description": "Fintech and habit accountability app combining budget tracking with dietary discipline, powered by Gemini AI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

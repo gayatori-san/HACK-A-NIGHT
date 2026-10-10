@@ -1,0 +1,224 @@
+package com.example.ui.components
+
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.ui.theme.EmeraldGreen
+import com.example.ui.theme.HelveticaFontFamily
+import com.example.ui.theme.PhonePeLightPurple
+import com.example.ui.theme.PhonePePurple
+
+@Composable
+fun GlassPillNav(
+    currentTab: String,
+    onTabSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding(),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        // Vibrant Nav Bar Container
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(68.dp)
+                .shadow(24.dp, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                .background(Color(0xF8130E24))
+                .border(
+                    1.dp,
+                    Brush.verticalGradient(listOf(Color(0x408B5CF6), Color(0x205F259F), Color(0x10FFFFFF))),
+                    RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 1. Home
+                NavBarItem(
+                    label = "Home",
+                    icon = Icons.Default.Home,
+                    isSelected = currentTab == "home",
+                    onClick = { onTabSelected("home") },
+                    testTag = "nav_home",
+                    modifier = Modifier.weight(1f)
+                )
+
+                // 2. Budget
+                NavBarItem(
+                    label = "Budget",
+                    icon = Icons.Default.AccountBalanceWallet,
+                    isSelected = currentTab == "budget",
+                    onClick = { onTabSelected("budget") },
+                    testTag = "nav_budget",
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Center placeholder for elevated QR Scanner button
+                Spacer(modifier = Modifier.weight(1.2f))
+
+                // 4. Health
+                NavBarItem(
+                    label = "Health",
+                    icon = Icons.Default.Favorite,
+                    isSelected = currentTab == "health",
+                    onClick = { onTabSelected("health") },
+                    testTag = "nav_health",
+                    modifier = Modifier.weight(1f)
+                )
+
+                // 5. Splits & Friends
+                NavBarItem(
+                    label = "Splits",
+                    icon = Icons.Default.People,
+                    isSelected = currentTab == "friends",
+                    onClick = { onTabSelected("friends") },
+                    testTag = "nav_splits",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        // Elevated Center PhonePe QR Scanner Button with minimal elevated surface
+        Box(
+            modifier = Modifier
+                .offset(y = (-14).dp)
+                .size(54.dp)
+                .shadow(12.dp, RoundedCornerShape(18.dp), spotColor = Color(0x60000000))
+                .clip(RoundedCornerShape(18.dp))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFF6D28D9), Color(0xFF4C1D95))
+                    )
+                )
+                .border(
+                    1.dp,
+                    Color(0x66C4B5FD),
+                    RoundedCornerShape(18.dp)
+                )
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    onTabSelected("log")
+                }
+                .testTag("nav_qr_scan"),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.QrCodeScanner,
+                contentDescription = "Scan QR",
+                tint = Color.White,
+                modifier = Modifier.size(26.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun NavBarItem(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    badgeCount: Int = 0,
+    testTag: String = ""
+) {
+    val tintColor by animateColorAsState(
+        targetValue = if (isSelected) Color.White else Color(0xFF827D99),
+        label = "nav_item_tint"
+    )
+
+    Column(
+        modifier = modifier
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { onClick() }
+            .padding(vertical = 10.dp)
+            .testTag(testTag),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(contentAlignment = Alignment.TopEnd) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = tintColor,
+                modifier = Modifier.size(24.dp)
+            )
+
+            if (badgeCount > 0) {
+                Box(
+                    modifier = Modifier
+                        .offset(x = 6.dp, y = (-4).dp)
+                        .size(14.dp)
+                        .clip(CircleShape)
+                        .background(EmeraldGreen),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "$badgeCount",
+                        color = Color.White,
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(3.dp))
+
+        Text(
+            text = label,
+            fontFamily = HelveticaFontFamily,
+            color = tintColor,
+            fontSize = 10.sp,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+        )
+    }
+}
