@@ -67,3 +67,36 @@ data class PatternAnalysisData(
     val goodHabits: List<String>,
     val badHabits: List<String>
 )
+
+data class SavingGoal(
+    val id: String,
+    val name: String,
+    val targetAmount: Double,
+    val savedAmount: Double = 0.0,
+    val category: String, // "Asset" or "Liability"
+    val walletType: String, // "Habit Lock Vault", "Amazon Pay Wallet", "Paytm / UPI Lite", "Digital Gold"
+    val externalUrl: String? = null
+) {
+    val progress: Float
+        get() = if (targetAmount > 0) (savedAmount / targetAmount).toFloat().coerceIn(0f, 1f) else 0f
+
+    val remainingAmount: Double
+        get() = (targetAmount - savedAmount).coerceAtLeast(0.0)
+
+    val isCompleted: Boolean
+        get() = savedAmount >= targetAmount
+}
+
+data class StatementAnalysisReport(
+    val title: String,
+    val bankruptcyRiskPercent: Int, // 0 - 100
+    val daysRemaining: Double,
+    val funnyRoast: String,
+    val psychologicalNudge: String,
+    val totalWastedOnImpulse: Double,
+    val projectedDividendsYearly: Double,
+    val projectedWealth5Yrs: Double,
+    val topLeakageCategory: String,
+    val monthlyBurn: Double
+)
+

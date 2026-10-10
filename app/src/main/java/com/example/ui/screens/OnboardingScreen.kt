@@ -163,22 +163,22 @@ fun OnboardingScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Progress Indicator
+                // Modern Minimal Progress Indicator Tabs
                 val maxBars = if (step <= 6) 5 else 4
                 val activeBarIndex = if (step <= 5) step else if (step == 6) 5 else (step - 6)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     (1..maxBars).forEach { i ->
+                        val isFilled = activeBarIndex >= i
+                        val activeColor = if (step >= 7) EmeraldGreen else NeonLime
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(
-                                    if (activeBarIndex >= i) (if (step >= 7) EmeraldGreen else NeonLime) else Color(0x24FFFFFF)
-                                )
+                                .height(5.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(if (isFilled) activeColor else Color(0x20FFFFFF))
                         )
                     }
                 }
@@ -900,18 +900,26 @@ fun OnboardingScreen(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 if (step == 6) {
-                    // Two clear buttons at checkpoint
+                    // Two clear, minimal, high-end buttons at checkpoint
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(PhonePePurple)
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(PhonePeLightPurple, PhonePePurple)
+                                )
+                            )
+                            .border(1.dp, Color(0x40C4B5FD), RoundedCornerShape(16.dp))
                             .clickable { step = 7 }
-                            .padding(vertical = 16.dp)
+                            .padding(horizontal = 20.dp, vertical = 16.dp)
                             .testTag("onboarding_proceed_deep_kyc"),
                         contentAlignment = Alignment.Center
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
                                 contentDescription = "Deep KYC",
@@ -920,23 +928,38 @@ fun OnboardingScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Proceed to Deep Behavioral Analysis (+250 XP)",
+                                text = "Deep Behavioral Analysis",
                                 fontFamily = HelveticaFontFamily,
                                 color = Color.White,
-                                fontSize = 13.sp,
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold
                             )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0x33FFFFFF))
+                                    .padding(horizontal = 7.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    text = "+250 XP",
+                                    fontFamily = HelveticaFontFamily,
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0x1AFFFFFF))
-                            .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(16.dp))
+                            .background(Color(0x12FFFFFF))
+                            .border(1.dp, Color(0x1FFFFFFF), RoundedCornerShape(16.dp))
                             .clickable {
                                 val finalAllowance = allowanceStr.toIntOrNull() ?: 5000
                                 onComplete(
@@ -950,17 +973,26 @@ fun OnboardingScreen(
                                     )
                                 )
                             }
-                            .padding(vertical = 14.dp)
+                            .padding(horizontal = 18.dp, vertical = 14.dp)
                             .testTag("onboarding_complete_later_button"),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "Enter Dashboard (Complete Behavioral Survey Later)",
-                            fontFamily = HelveticaFontFamily,
-                            color = TextSecondary,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Enter Dashboard Directly",
+                                fontFamily = HelveticaFontFamily,
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Complete behavioral survey anytime from taskbar",
+                                fontFamily = HelveticaFontFamily,
+                                color = TextMuted,
+                                fontSize = 11.sp
+                            )
+                        }
                     }
                 } else {
                     // Standard Continue or Finalize Button

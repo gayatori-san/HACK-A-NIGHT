@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -53,28 +54,30 @@ fun GlassPillNav(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .navigationBarsPadding(),
+            .padding(horizontal = 14.dp, vertical = 6.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
-        // Vibrant Nav Bar Container
+        // Vibrant Minimalist Glass Dock Container
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(68.dp)
-                .shadow(24.dp, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                .background(Color(0xF8130E24))
+                .height(64.dp)
+                .shadow(16.dp, RoundedCornerShape(26.dp), spotColor = Color(0x557C3AED))
+                .clip(RoundedCornerShape(26.dp))
+                .background(Color(0xF5130D24))
                 .border(
                     1.dp,
-                    Brush.verticalGradient(listOf(Color(0x408B5CF6), Color(0x205F259F), Color(0x10FFFFFF))),
-                    RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                    Brush.verticalGradient(
+                        listOf(Color(0x40A78BFA), Color(0x187C3AED), Color(0x12FFFFFF))
+                    ),
+                    RoundedCornerShape(26.dp)
                 )
         ) {
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.SpaceAround,
+                    .fillMaxSize()
+                    .padding(horizontal = 4.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // 1. Home
@@ -97,8 +100,8 @@ fun GlassPillNav(
                     modifier = Modifier.weight(1f)
                 )
 
-                // Center placeholder for elevated QR Scanner button
-                Spacer(modifier = Modifier.weight(1.2f))
+                // Center spacer for elevated QR Scanner button
+                Spacer(modifier = Modifier.weight(1.05f))
 
                 // 4. Health
                 NavBarItem(
@@ -122,22 +125,22 @@ fun GlassPillNav(
             }
         }
 
-        // Elevated Center PhonePe QR Scanner Button with minimal elevated surface
+        // Elevated Center PhonePe QR Scanner Button with sleek floating styling
         Box(
             modifier = Modifier
                 .offset(y = (-14).dp)
-                .size(54.dp)
-                .shadow(12.dp, RoundedCornerShape(18.dp), spotColor = Color(0x60000000))
-                .clip(RoundedCornerShape(18.dp))
+                .size(52.dp)
+                .shadow(14.dp, CircleShape, spotColor = Color(0xAA7C3AED))
+                .clip(CircleShape)
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color(0xFF6D28D9), Color(0xFF4C1D95))
+                        listOf(Color(0xFF8B5CF6), Color(0xFF6D28D9))
                     )
                 )
                 .border(
-                    1.dp,
-                    Color(0x66C4B5FD),
-                    RoundedCornerShape(18.dp)
+                    1.5.dp,
+                    Color(0x80DDD6FE),
+                    CircleShape
                 )
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
@@ -152,7 +155,7 @@ fun GlassPillNav(
                 imageVector = Icons.Default.QrCodeScanner,
                 contentDescription = "Scan QR",
                 tint = Color.White,
-                modifier = Modifier.size(26.dp)
+                modifier = Modifier.size(24.dp)
             )
         }
     }
@@ -169,17 +172,23 @@ private fun NavBarItem(
     testTag: String = ""
 ) {
     val tintColor by animateColorAsState(
-        targetValue = if (isSelected) Color.White else Color(0xFF827D99),
+        targetValue = if (isSelected) Color.White else Color(0xFF8E88A2),
         label = "nav_item_tint"
+    )
+    val bgColor by animateColorAsState(
+        targetValue = if (isSelected) Color(0x288B5CF6) else Color.Transparent,
+        label = "nav_item_bg"
     )
 
     Column(
         modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) { onClick() }
-            .padding(vertical = 10.dp)
+            .background(bgColor)
+            .padding(vertical = 6.dp, horizontal = 2.dp)
             .testTag(testTag),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -189,14 +198,14 @@ private fun NavBarItem(
                 imageVector = icon,
                 contentDescription = label,
                 tint = tintColor,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(20.dp)
             )
 
             if (badgeCount > 0) {
                 Box(
                     modifier = Modifier
                         .offset(x = 6.dp, y = (-4).dp)
-                        .size(14.dp)
+                        .size(13.dp)
                         .clip(CircleShape)
                         .background(EmeraldGreen),
                     contentAlignment = Alignment.Center
@@ -211,14 +220,25 @@ private fun NavBarItem(
             }
         }
 
-        Spacer(modifier = Modifier.height(3.dp))
+        Spacer(modifier = Modifier.height(2.dp))
 
         Text(
             text = label,
             fontFamily = HelveticaFontFamily,
             color = tintColor,
-            fontSize = 10.sp,
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+            fontSize = 10.5.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            letterSpacing = 0.2.sp
         )
+
+        if (isSelected) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Box(
+                modifier = Modifier
+                    .size(width = 12.dp, height = 2.dp)
+                    .clip(RoundedCornerShape(1.dp))
+                    .background(PhonePeLightPurple)
+            )
+        }
     }
 }

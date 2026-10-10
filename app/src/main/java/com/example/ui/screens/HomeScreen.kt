@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
@@ -30,6 +33,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -38,11 +42,17 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -58,6 +68,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,7 +76,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.models.TransactionItem
 import com.example.ui.components.BusinessCategoryTile
-import com.example.ui.components.BusinessQuickActionsGrid
 import com.example.ui.components.CategoryIcon
 import com.example.ui.components.GlassBadge
 import com.example.ui.components.GlassCard
@@ -100,14 +110,13 @@ fun HomeScreen(
     onNavigateToTab: (String) -> Unit = {},
     onUpdateAllowance: (Int) -> Unit = {},
     onOpenKyc: () -> Unit = {},
+    onImportDemoStatement: (String) -> Unit = {},
+    onImportCsv: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var showBudgetSlider by remember { mutableStateOf(false) }
     var showTopMenu by remember { mutableStateOf(false) }
     var showCategoryMenu by remember { mutableStateOf(false) }
-    var tempAllowanceSlider by remember(uiState.userData.allowance) {
-        mutableFloatStateOf(uiState.userData.allowance.toFloat())
-    }
+    var showUploadStatementModal by remember { mutableStateOf(false) }
 
     val filteredTxns = if (uiState.filterCat == "All") {
         uiState.txns
@@ -193,11 +202,39 @@ fun HomeScreen(
                             }
                         }
 
-                        // Right PhonePe Action Buttons (QR Scanner & Submenu Overflow)
+                        // Right PhonePe Action Buttons (Behavioral KYC, QR Scanner & Submenu Overflow)
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // Deep Behavioral Analysis Small Icon at Top Taskbar (Requested in #4)
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0x338B5CF6))
+                                    .border(1.dp, Color(0x60A78BFA), CircleShape)
+                                    .clickable { onOpenKyc() }
+                                    .testTag("home_top_behavioral_kyc_icon"),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Psychology,
+                                    contentDescription = "Deep Behavioral Analysis",
+                                    tint = if (uiState.userData.isBehavioralKycCompleted) EmeraldGreen else SoftLavender,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                if (!uiState.userData.isBehavioralKycCompleted) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(7.dp)
+                                            .clip(CircleShape)
+                                            .background(AmberCashback)
+                                            .align(Alignment.TopEnd)
+                                    )
+                                }
+                            }
+
                             // PhonePe QR Code Scanner
                             Box(
                                 modifier = Modifier
@@ -361,7 +398,7 @@ fun HomeScreen(
                                                 )
                                                 Spacer(modifier = Modifier.width(10.dp))
                                                 Text(
-                                                    text = if (showBudgetSlider) "Hide Allowance Slider" else "Adjust Allowance Limit",
+                                                    text = "Goals & Allowance Budget",
                                                     fontFamily = HelveticaFontFamily,
                                                     color = Color.White,
                                                     fontSize = 13.sp,
@@ -371,7 +408,7 @@ fun HomeScreen(
                                         },
                                         onClick = {
                                             showTopMenu = false
-                                            showBudgetSlider = !showBudgetSlider
+                                            onNavigateToTab("budget")
                                         }
                                     )
 
@@ -562,148 +599,42 @@ fun HomeScreen(
                                     }
                                 }
 
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    // Interactive Allowance / Budget Slider Toggle Button
-                                    Box(
-                                        modifier = Modifier
-                                            .size(38.dp)
-                                            .clip(CircleShape)
-                                            .background(
-                                                if (showBudgetSlider) PhonePeLightPurple
-                                                else Color(0xFF201633)
-                                            )
-                                            .border(
-                                                1.dp,
-                                                if (showBudgetSlider) PhonePeLightPurple
-                                                else Color(0x308B5CF6),
-                                                CircleShape
-                                            )
-                                            .clickable { showBudgetSlider = !showBudgetSlider }
-                                            .testTag("home_slider_option_toggle"),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Tune,
-                                            contentDescription = "Adjust Budget Slider",
-                                            tint = Color.White,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-
-                                    // Quick Dopamine "I Resisted" Glass Button
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(16.dp))
-                                            .background(Color(0xFF201635))
-                                            .border(
-                                                1.dp,
-                                                Brush.linearGradient(
-                                                    listOf(
-                                                        Color(0x408B5CF6),
-                                                        Color(0x25A855F7),
-                                                        Color(0x20F59E0B)
-                                                    )
-                                                ),
-                                                RoundedCornerShape(16.dp)
-                                            )
-                                            .clickable { onResist() }
-                                            .padding(horizontal = 14.dp, vertical = 9.dp)
-                                            .testTag("home_resist_button"),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(
-                                                text = "⚡ I Resisted",
-                                                fontFamily = HelveticaFontFamily,
-                                                color = Color.White,
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(
-                                                text = "+15 XP",
-                                                fontFamily = HelveticaFontFamily,
-                                                color = AmberCashback,
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.SemiBold
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Interactive Budget Allowance Slider Card (User Request: "where is our slider option")
-                            AnimatedVisibility(visible = showBudgetSlider) {
-                                Column(
+                                // Quick Dopamine "I Resisted" Glass Button
+                                Box(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 16.dp)
                                         .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF1A132C))
-                                        .border(1.dp, Color(0x408B5CF6), RoundedCornerShape(16.dp))
-                                        .padding(14.dp)
-                                        .testTag("home_allowance_slider_card")
+                                        .background(Color(0xFF201635))
+                                        .border(
+                                            1.dp,
+                                            Brush.linearGradient(
+                                                listOf(
+                                                    Color(0x408B5CF6),
+                                                    Color(0x25A855F7),
+                                                    Color(0x20F59E0B)
+                                                )
+                                            ),
+                                            RoundedCornerShape(16.dp)
+                                        )
+                                        .clickable { onResist() }
+                                        .padding(horizontal = 14.dp, vertical = 9.dp)
+                                        .testTag("home_resist_button"),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(text = "🎯", fontSize = 16.sp)
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = "Discipline Allowance Slider",
-                                                fontFamily = HelveticaFontFamily,
-                                                color = Color.White,
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                        GlassBadge(
-                                            text = "₹${tempAllowanceSlider.toInt()}/mo",
-                                            textColor = SoftLavender,
-                                            borderColor = Color(0x308B5CF6),
-                                            backgroundColor = Color(0x1A8B5CF6)
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.height(6.dp))
-
-                                    Slider(
-                                        value = tempAllowanceSlider,
-                                        onValueChange = {
-                                            tempAllowanceSlider = it
-                                            onUpdateAllowance(it.toInt())
-                                        },
-                                        valueRange = 1000f..30000f,
-                                        steps = 29,
-                                        colors = SliderDefaults.colors(
-                                            thumbColor = PhonePeLightPurple,
-                                            activeTrackColor = PhonePeLightPurple,
-                                            inactiveTrackColor = Color(0x308B5CF6)
-                                        ),
-                                        modifier = Modifier.fillMaxWidth().testTag("home_budget_slider")
-                                    )
-
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            text = "Min ₹1,000",
+                                            text = "⚡ I Resisted",
                                             fontFamily = HelveticaFontFamily,
-                                            color = TextMuted,
-                                            fontSize = 10.sp
+                                            color = Color.White,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
                                         )
+                                        Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            text = "Max ₹30,000",
+                                            text = "+15 XP",
                                             fontFamily = HelveticaFontFamily,
-                                            color = TextMuted,
-                                            fontSize = 10.sp
+                                            color = AmberCashback,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.SemiBold
                                         )
                                     }
                                 }
@@ -714,21 +645,192 @@ fun HomeScreen(
             }
         }
 
-        // 2a. Sophisticated Google Pay / PhonePe Business Quick Actions Grid
+        // 2a. Big Runway XAI Engine Hero Card (Requested: Big button below audit card)
         item {
-            BusinessQuickActionsGrid(
-                onScanQr = { onNavigateToTab("log") },
-                onPayContact = { onNavigateToTab("friends") },
-                onSplitExpenses = { onNavigateToTab("friends") },
-                onBankTransfer = { onNavigateToTab("budget") },
-                onCheckBalance = { showBudgetSlider = !showBudgetSlider },
-                onSelfTransfer = { onNavigateToTab("budget") },
-                onPayBills = { onOpenInsights() },
-                onLogExpense = { onNavigateToTab("log") }
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                GlassCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigateToTab("runway") }
+                        .testTag("home_runway_banner"),
+                    shape = RoundedCornerShape(22.dp),
+                    backgroundColor = Color(0xFF1B122F),
+                    gradientBrush = Brush.verticalGradient(
+                        listOf(
+                            Color(0xFF2E1754),
+                            Color(0xFF1E1138),
+                            Color(0xFF140B26)
+                        )
+                    ),
+                    borderBrush = Brush.linearGradient(
+                        listOf(
+                            Color(0x808B5CF6),
+                            Color(0x40C4B5FD),
+                            Color(0x2000D09C)
+                        )
+                    ),
+                    elevation = 0.dp
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(
+                                            Brush.linearGradient(
+                                                listOf(Color(0xFF7C3AED), Color(0xFF4C1D95))
+                                            )
+                                        )
+                                        .border(1.2.dp, Color(0x60DDD6FE), RoundedCornerShape(14.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.TrendingUp,
+                                        contentDescription = "Runway Engine",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(26.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "RUNWAY XAI ENGINE",
+                                            fontFamily = HelveticaFontFamily,
+                                            color = Color.White,
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.6.sp
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "Autonomous Liquidity & Decision Trees",
+                                        fontFamily = HelveticaFontFamily,
+                                        color = SoftLavender,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                            }
+
+                            GlassBadge(
+                                text = "LIVE XAI",
+                                textColor = EmeraldGreen,
+                                borderColor = EmeraldGreen.copy(alpha = 0.4f),
+                                backgroundColor = EmeraldGreen.copy(alpha = 0.15f),
+                                dotColor = EmeraldGreen
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Live Telemetry Highlights (Runway days and burn velocity)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0x20000000))
+                                .border(1.dp, Color(0x1A8B5CF6), RoundedCornerShape(12.dp))
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "PROJECTED RUNWAY",
+                                    fontFamily = HelveticaFontFamily,
+                                    color = TextMuted,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.6.sp
+                                )
+                                Text(
+                                    text = "19.2 Days",
+                                    fontFamily = HelveticaFontFamily,
+                                    color = Color.White,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .width(1.dp)
+                                    .height(28.dp)
+                                    .background(Color(0x20FFFFFF))
+                            )
+
+                            Column {
+                                Text(
+                                    text = "BURN VELOCITY",
+                                    fontFamily = HelveticaFontFamily,
+                                    color = TextMuted,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.6.sp
+                                )
+                                Text(
+                                    text = "₹${uiState.currentOutflowDay} / day",
+                                    fontFamily = HelveticaFontFamily,
+                                    color = if (uiState.isCriticalBurn) CoralRed else EmeraldGreen,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Big Launch Action Bar
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(PhonePeLightPurple, PhonePePurple)
+                                    )
+                                )
+                                .padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Launch Runway AI Simulation",
+                                    fontFamily = HelveticaFontFamily,
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        // 2b. Runway: Autonomous Finance & XAI Engine Featured Card
+        // 2b. Upload CSV / Excel Statement Button Card (User Request: "make the uplaod csv and excel file button")
         item {
             Box(
                 modifier = Modifier
@@ -738,15 +840,15 @@ fun HomeScreen(
                 GlassCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onNavigateToTab("runway") }
-                        .testTag("home_runway_banner"),
+                        .clickable { showUploadStatementModal = true }
+                        .testTag("home_upload_csv_card"),
                     shape = RoundedCornerShape(18.dp),
-                    backgroundColor = Color(0xFF161124),
+                    backgroundColor = Color(0xFF161126),
                     gradientBrush = Brush.verticalGradient(
-                        listOf(Color(0xFF221538), Color(0xFF140E20))
+                        listOf(Color(0xFF22143B), Color(0xFF140D22))
                     ),
                     borderBrush = Brush.linearGradient(
-                        listOf(Color(0x338B5CF6), Color(0x18FFFFFF))
+                        listOf(Color(0x388B5CF6), Color(0x1FFFFFFF))
                     ),
                     elevation = 0.dp
                 ) {
@@ -756,48 +858,44 @@ fun HomeScreen(
                             .padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Left Glowing Icon
                         Box(
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(Color(0xFF24163E))
-                                .border(1.dp, Color(0x388B5CF6), RoundedCornerShape(14.dp)),
+                                .background(Color(0x2600D09C))
+                                .border(1.dp, Color(0x4000D09C), RoundedCornerShape(14.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.TrendingUp,
-                                contentDescription = "Runway Engine",
-                                tint = SoftLavender,
-                                modifier = Modifier.size(24.dp)
+                                imageVector = Icons.Default.Description,
+                                contentDescription = "Upload CSV",
+                                tint = EmeraldGreen,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
 
                         Spacer(modifier = Modifier.width(12.dp))
 
                         Column(modifier = Modifier.weight(1f)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "RUNWAY ENGINE",
+                                    text = "Upload Statement (CSV / Excel)",
                                     fontFamily = HelveticaFontFamily,
                                     color = Color.White,
                                     fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 0.5.sp
+                                    fontWeight = FontWeight.Bold
                                 )
+                                Spacer(modifier = Modifier.width(6.dp))
                                 GlassBadge(
-                                    text = "XAI ACTIVE",
+                                    text = "AUTO-AUDIT",
                                     textColor = EmeraldGreen,
                                     borderColor = EmeraldGreen.copy(alpha = 0.4f),
-                                    backgroundColor = EmeraldGreen.copy(alpha = 0.15f)
+                                    backgroundColor = EmeraldGreen.copy(alpha = 0.12f)
                                 )
                             }
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "30-Day Liquidity Forecast • Decision Tree • Roast & Rescue",
+                                text = "Import PhonePe, GPay, HDFC, or SBI records to auto-categorize expenses",
                                 fontFamily = HelveticaFontFamily,
                                 color = TextSecondary,
                                 fontSize = 11.sp,
@@ -811,113 +909,16 @@ fun HomeScreen(
                             modifier = Modifier
                                 .size(34.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF261942))
-                                .border(1.dp, Color(0x408B5CF6), CircleShape),
+                                .background(Color(0x208B5CF6))
+                                .border(1.dp, Color(0x338B5CF6), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                contentDescription = "Open Runway",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
+                                imageVector = Icons.Default.UploadFile,
+                                contentDescription = "Upload",
+                                tint = SoftLavender,
+                                modifier = Modifier.size(18.dp)
                             )
-                        }
-                    }
-                }
-            }
-        }
-
-        // 2c. Deep Behavioral KYC Pending Action Banner (Available later to complete survey)
-        if (!uiState.userData.isBehavioralKycCompleted) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
-                ) {
-                    GlassCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onOpenKyc() }
-                            .testTag("home_kyc_incomplete_banner"),
-                        shape = RoundedCornerShape(18.dp),
-                        backgroundColor = Color(0xFF161124),
-                        gradientBrush = Brush.verticalGradient(
-                            listOf(Color(0xFF201435), Color(0xFF130E20))
-                        ),
-                        borderBrush = Brush.linearGradient(
-                            listOf(Color(0x408B5CF6), Color(0x14FFFFFF))
-                        ),
-                        elevation = 0.dp
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(Color(0x208B5CF6))
-                                    .border(1.dp, Color(0x338B5CF6), RoundedCornerShape(14.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Psychology,
-                                    contentDescription = "Behavioral KYC",
-                                    tint = PhonePeAccentPurple,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = "Deep Behavioral KYC Pending",
-                                        fontFamily = HelveticaFontFamily,
-                                        color = Color.White,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    GlassBadge(
-                                        text = "+250 XP",
-                                        textColor = SoftLavender,
-                                        borderColor = Color(0x308B5CF6),
-                                        backgroundColor = Color(0x1A8B5CF6)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "Complete behavioral survey to calibrate roasts & AI guardrails",
-                                    fontFamily = HelveticaFontFamily,
-                                    color = TextSecondary,
-                                    fontSize = 11.sp,
-                                    lineHeight = 14.sp
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            Box(
-                                modifier = Modifier
-                                    .size(34.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0x208B5CF6))
-                                    .border(1.dp, Color(0x338B5CF6), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = "Complete KYC",
-                                    tint = PhonePeAccentPurple,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
                         }
                     }
                 }
@@ -1231,7 +1232,211 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(96.dp))
         }
     }
+
+    if (showUploadStatementModal) {
+        StatementUploadModal(
+            visible = showUploadStatementModal,
+            onDismiss = { showUploadStatementModal = false },
+            onImportDemoStatement = { bank ->
+                onImportDemoStatement(bank)
+                showUploadStatementModal = false
+            },
+            onImportCsv = { csv ->
+                onImportCsv(csv)
+                showUploadStatementModal = false
+            }
+        )
+    }
 }
+
+@Composable
+fun StatementUploadModal(
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    onImportDemoStatement: (String) -> Unit,
+    onImportCsv: (String) -> Unit
+) {
+    if (!visible) return
+    val context = LocalContext.current
+    var customCsvText by remember { mutableStateOf("") }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            try {
+                val content = context.contentResolver.openInputStream(it)?.bufferedReader()?.use { reader ->
+                    reader.readText()
+                }
+                if (!content.isNullOrBlank()) {
+                    onImportCsv(content)
+                }
+            } catch (e: Exception) {
+                // Ignore file read error gracefully
+            }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1E1535),
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Description,
+                    contentDescription = null,
+                    tint = EmeraldGreen,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Upload Statement (CSV / Excel)",
+                    fontFamily = HelveticaFontFamily,
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text(
+                    text = "Import transactions from PhonePe, GPay, HDFC, SBI, or ICICI CSV/Excel files to automatically audit and categorize spending.",
+                    fontFamily = HelveticaFontFamily,
+                    color = TextSecondary,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp
+                )
+
+                // Native Device File Picker Button
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(PhonePeLightPurple, PhonePePurple)
+                            )
+                        )
+                        .clickable { filePickerLauncher.launch("*/*") }
+                        .padding(vertical = 12.dp, horizontal = 14.dp)
+                        .testTag("upload_file_picker_button"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.UploadFile,
+                            contentDescription = "Pick File",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Browse CSV / Excel on Device",
+                            fontFamily = HelveticaFontFamily,
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // Quick 1-Tap Statement Import Options
+                Text(
+                    text = "QUICK 1-TAP BANK DEMO IMPORTS",
+                    fontFamily = HelveticaFontFamily,
+                    color = SoftLavender,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFF281845))
+                            .border(1.dp, Color(0x608B5CF6), RoundedCornerShape(12.dp))
+                            .clickable { onImportDemoStatement("PhonePe UPI") }
+                            .padding(vertical = 12.dp, horizontal = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = "📱 PhonePe UPI", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text(text = "6 Sample Txns", color = SoftLavender, fontSize = 10.sp)
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFF1A263D))
+                            .border(1.dp, Color(0x6038BDF8), RoundedCornerShape(12.dp))
+                            .clickable { onImportDemoStatement("HDFC Statement") }
+                            .padding(vertical = 12.dp, horizontal = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = "🏛️ HDFC Bank", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text(text = "6 Sample Txns", color = SoftLavender, fontSize = 10.sp)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                // Custom CSV Paste
+                Text(
+                    text = "OR PASTE STATEMENT CSV",
+                    fontFamily = HelveticaFontFamily,
+                    color = SoftLavender,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp
+                )
+
+                OutlinedTextField(
+                    value = customCsvText,
+                    onValueChange = { customCsvText = it },
+                    placeholder = { Text("e.g. Swiggy, 420\nDecathlon, 1200\nSalary Credit, 25000", color = TextMuted, fontSize = 11.sp) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = PhonePeLightPurple,
+                        unfocusedBorderColor = Color(0x408B5CF6)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(90.dp)
+                )
+
+                if (customCsvText.isNotBlank()) {
+                    Button(
+                        onClick = { onImportCsv(customCsvText) },
+                        colors = ButtonDefaults.buttonColors(containerColor = PhonePePurple),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Parse & Add Transactions", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0x28FFFFFF))
+            ) {
+                Text("Close", color = Color.White)
+            }
+        }
+    )
+}
+
 
 /**
  * PhonePe Transaction Card with vibrant styling, merchant avatar,

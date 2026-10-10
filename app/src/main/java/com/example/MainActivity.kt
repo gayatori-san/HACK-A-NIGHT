@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -42,6 +43,7 @@ import com.example.ui.components.GlassPillNav
 import com.example.ui.components.KycBehavioralModal
 import com.example.ui.components.NotifToast
 import com.example.ui.components.PatternAnalysisModal
+import com.example.ui.components.StatementAnalysisReportPopup
 import com.example.ui.screens.BudgetScreen
 import com.example.ui.screens.FriendsScreen
 import com.example.ui.screens.HealthScreen
@@ -147,6 +149,24 @@ fun MainApp(
                                 modifier = Modifier
                                     .size(36.dp)
                                     .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0x228B5CF6))
+                                    .border(1.dp, Color(0x60A78BFA), RoundedCornerShape(12.dp))
+                                    .clickable { viewModel.toggleKycModal(true) }
+                                    .testTag("app_bar_kyc_icon"),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Psychology,
+                                    contentDescription = "Behavioral KYC",
+                                    tint = if (uiState.userData.isBehavioralKycCompleted) com.example.ui.theme.EmeraldGreen else com.example.ui.theme.SoftLavender,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(12.dp))
                                     .background(Color(0x14FFFFFF))
                                     .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
                                     .clickable { viewModel.toggleInsights(true) }
@@ -195,6 +215,8 @@ fun MainApp(
                             onNavigateToTab = { tab -> viewModel.setTab(tab) },
                             onUpdateAllowance = { newAllowance -> viewModel.updateAllowance(newAllowance) },
                             onOpenKyc = { viewModel.toggleKycModal(true) },
+                            onImportDemoStatement = { bank -> viewModel.importDemoStatement(bank) },
+                            onImportCsv = { csv -> viewModel.importCsvContent(csv) },
                             modifier = Modifier.fillMaxSize()
                         )
 
@@ -202,6 +224,10 @@ fun MainApp(
                             uiState = uiState,
                             investTips = viewModel.investTips,
                             onSyncSupabase = { viewModel.syncWithSupabase() },
+                            onUpdateAllowance = { newAllowance -> viewModel.updateAllowance(newAllowance) },
+                            onAddGoal = { goal -> viewModel.addGoal(goal) },
+                            onDepositGoal = { id, amt -> viewModel.depositToGoal(id, amt) },
+                            onDeleteGoal = { id -> viewModel.deleteGoal(id) },
                             modifier = Modifier.fillMaxSize()
                         )
 
@@ -288,6 +314,15 @@ fun MainApp(
                     .statusBarsPadding()
                     .navigationBarsPadding()
             )
+
+            // Statement Upload AI Analysis Pop-up (Bankruptcy meter, roast, dividend graph)
+            val activeReport = uiState.statementReport
+            if (uiState.showStatementReportPopup && activeReport != null) {
+                StatementAnalysisReportPopup(
+                    report = activeReport,
+                    onDismiss = { viewModel.dismissStatementReport() }
+                )
+            }
         }
     }
 }

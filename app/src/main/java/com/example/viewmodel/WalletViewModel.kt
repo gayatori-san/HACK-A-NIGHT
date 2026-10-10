@@ -10,6 +10,8 @@ import com.example.data.models.HealthTip
 import com.example.data.models.InvestTip
 import com.example.data.models.PatternAnalysisData
 import com.example.data.models.RecentInsight
+import com.example.data.models.SavingGoal
+import com.example.data.models.StatementAnalysisReport
 import com.example.data.models.SwapTip
 import com.example.data.models.TransactionItem
 import com.example.data.models.UserData
@@ -28,6 +30,33 @@ data class WalletUiState(
     val hasCompletedSurvey: Boolean = false,
     val userData: UserData = UserData(),
     val txns: List<TransactionItem> = emptyList(),
+    val goals: List<SavingGoal> = listOf(
+        SavingGoal(
+            id = "goal_1",
+            name = "Royal Enfield Hunter 350",
+            targetAmount = 180000.0,
+            savedAmount = 52000.0,
+            category = "Liability",
+            walletType = "Habit Lock Vault"
+        ),
+        SavingGoal(
+            id = "goal_2",
+            name = "MacBook Pro M3",
+            targetAmount = 145000.0,
+            savedAmount = 68000.0,
+            category = "Asset",
+            walletType = "Amazon Pay Wallet",
+            externalUrl = "https://www.amazon.in/gp/payment/wallet/"
+        ),
+        SavingGoal(
+            id = "goal_3",
+            name = "Emergency Gold Reserve",
+            targetAmount = 100000.0,
+            savedAmount = 35000.0,
+            category = "Asset",
+            walletType = "Digital Gold"
+        )
+    ),
     val tab: String = "home", // "home", "budget", "log", "health", "friends"
     val xp: Int = 250,
     val notifMessage: String = "",
@@ -64,7 +93,12 @@ data class WalletUiState(
     val isSwapping: Boolean = false,
 
     // KYC Modal state
-    val showKycModal: Boolean = false
+    val showKycModal: Boolean = false,
+
+    // Statement Upload XAI Analysis Report Popup State
+    val statementReport: StatementAnalysisReport? = null,
+    val showStatementReportPopup: Boolean = false,
+    val isAnalyzingStatement: Boolean = false
 ) {
     val totalSpent: Double
         get() = abs(txns.filter { it.amount < 0 }.sumOf { it.amount })
@@ -773,4 +807,132 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
             state.copy(userData = updatedUser, txns = updatedTxns)
         }
     }
+
+    fun addGoal(goal: SavingGoal) {
+        _uiState.update { state ->
+            state.copy(goals = state.goals + goal)
+        }
+        showNotif("🎯 New Goal created: ${goal.name}")
+    }
+
+    fun depositToGoal(goalId: String, amount: Double) {
+        _uiState.update { state ->
+            val updatedGoals = state.goals.map {
+                if (it.id == goalId) it.copy(savedAmount = (it.savedAmount + amount).coerceAtMost(it.targetAmount))
+                else it
+            }
+            state.copy(goals = updatedGoals)
+        }
+        showNotif("💰 Added ₹${amount.toInt()} to Goal Wallet!")
+    }
+
+    fun deleteGoal(goalId: String) {
+        _uiState.update { state ->
+            state.copy(goals = state.goals.filterNot { it.id == goalId })
+        }
+        showNotif("Goal removed.")
+    }
+
+    fun importDemoStatement(bankName: String) {
+        val sampleStatementTxns = listOf(
+            TransactionItem(System.currentTimeMillis() + 1, "Swiggy Instant Delivery", -420.0, "food", "Today, 01:15 PM", 0xFFFF9800, "NEGATIVE", "Lunch order", "Impulse Buy", "junk"),
+            TransactionItem(System.currentTimeMillis() + 2, "Amazon India (Electronics)", -1850.0, "shopping", "Yesterday, 06:40 PM", 0xFF9C27B0, "NEUTRAL", "Tech gear", "Planned Want"),
+            TransactionItem(System.currentTimeMillis() + 3, "Uber City Ride", -290.0, "travel", "Yesterday, 09:10 AM", 0xFF00BCD4, "NEUTRAL", "Office commute", "Absolute Need"),
+            TransactionItem(System.currentTimeMillis() + 4, "Starbucks Coffee", -380.0, "food", "08 May, 04:30 PM", 0xFFFF9800, "NEGATIVE", "Cold brew", "Impulse Buy", "junk"),
+            TransactionItem(System.currentTimeMillis() + 5, "Blinkit Grocery", -650.0, "food", "07 May, 11:20 AM", 0xFF10B981, "POSITIVE", "Groceries & Milk", "Absolute Need", "healthy"),
+            TransactionItem(System.currentTimeMillis() + 6, "Salary Credit / UPI Lite", 8500.0, "income", "05 May, 10:00 AM", 0xFF10B981, "NEUTRAL", "Direct Bank Deposit")
+        )
+        _uiState.update { state ->
+            state.copy(
+                txns = sampleStatementTxns + state.txns,
+                tab = "runway", // Instantly redirects to runway tab per user request
+                isAnalyzingStatement = true
+            )
+        }
+        showNotif("⚡ Statement imported! Running Runway XAI analysis...")
+
+        viewModelScope.launch {
+            val report = GeminiAiService.analyzeUploadedStatement(
+                txns = sampleStatementTxns,
+                userData = _uiState.value.userData,
+                currentBalance = _uiState.value.balance
+            )
+            _uiState.update { state ->
+                state.copy(
+                    isAnalyzingStatement = false,
+                    statementReport = report,
+                    showStatementReportPopup = true
+                )
+            }
+            showNotif("🚨 Runway XAI Bankruptcy Risk: ${report.bankruptcyRiskPercent}% | Month-end alert ready!")
+        }
+    }
+
+    fun importCsvContent(csvString: String) {
+        val lines = csvString.trim().lines().filter { it.isNotBlank() }
+        val imported = mutableListOf<TransactionItem>()
+        var count = 0
+        for (line in lines) {
+            val parts = line.split(",").map { it.trim().trim('\"') }
+            if (parts.size >= 2) {
+                val payee = parts[0]
+                val amtVal = parts[1].replace("₹", "").replace("Rs", "").replace("$", "").toDoubleOrNull()
+                if (amtVal != null && !payee.equals("Payee", ignoreCase = true) && !payee.equals("Name", ignoreCase = true)) {
+                    count++
+                    val isIncome = amtVal > 0 || parts.getOrNull(2)?.contains("credit", ignoreCase = true) == true
+                    val cat = when {
+                        payee.contains("Swiggy", true) || payee.contains("Zomato", true) || payee.contains("Food", true) -> "food"
+                        payee.contains("Amazon", true) || payee.contains("Flipkart", true) -> "shopping"
+                        payee.contains("Uber", true) || payee.contains("Ola", true) || payee.contains("Metro", true) -> "travel"
+                        isIncome -> "income"
+                        else -> "essential"
+                    }
+                    val finalAmt = if (isIncome) abs(amtVal) else -abs(amtVal)
+                    imported.add(
+                        TransactionItem(
+                            id = System.currentTimeMillis() + count,
+                            name = payee,
+                            amount = finalAmt,
+                            cat = cat,
+                            date = "Imported",
+                            necessity = if (cat == "essential") "Absolute Need" else "Planned Want"
+                        )
+                    )
+                }
+            }
+        }
+        if (imported.isNotEmpty()) {
+            _uiState.update { state ->
+                state.copy(
+                    txns = imported + state.txns,
+                    tab = "runway", // Instantly redirects to runway tab per user request
+                    isAnalyzingStatement = true
+                )
+            }
+            showNotif("⚡ ${imported.size} transactions imported! Runway AI analyzing behavior...")
+
+            viewModelScope.launch {
+                val report = GeminiAiService.analyzeUploadedStatement(
+                    txns = imported,
+                    userData = _uiState.value.userData,
+                    currentBalance = _uiState.value.balance
+                )
+                _uiState.update { state ->
+                    state.copy(
+                        isAnalyzingStatement = false,
+                        statementReport = report,
+                        showStatementReportPopup = true
+                    )
+                }
+                showNotif("🚨 Runway XAI Bankruptcy Risk: ${report.bankruptcyRiskPercent}% | Month-end alert ready!")
+            }
+        } else {
+            showNotif("⚠️ Could not parse CSV rows. Format: Payee, Amount")
+        }
+    }
+
+    fun dismissStatementReport() {
+        _uiState.update { it.copy(showStatementReportPopup = false) }
+    }
 }
+

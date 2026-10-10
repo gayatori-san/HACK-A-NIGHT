@@ -7,6 +7,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -101,6 +102,10 @@ fun RunwayScreen(
     // Mode toggle: 0 = "HTML XAI Studio", 1 = "Native XAI & Runway"
     var viewMode by remember { mutableStateOf(0) }
 
+    BackHandler {
+        onBack()
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -112,11 +117,14 @@ fun RunwayScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(PhonePeDarkHeader)
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f, fill = false)
+            ) {
                 IconButton(
                     onClick = onBack,
                     modifier = Modifier.size(38.dp)
@@ -155,45 +163,84 @@ fun RunwayScreen(
                 }
             }
 
-            // Sub-mode pill switcher
-            Row(
+            GlassBadge(
+                text = "ACTIVE XAI",
+                textColor = EmeraldGreen,
+                borderColor = EmeraldGreen.copy(alpha = 0.3f),
+                backgroundColor = EmeraldGreen.copy(alpha = 0.12f),
+                dotColor = EmeraldGreen
+            )
+        }
+
+        // Clean, Spacious Mode Switcher Segmented Control
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color(0xFF1B132B))
+                .border(1.dp, Color(0x338B5CF6), RoundedCornerShape(14.dp))
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0x22FFFFFF))
-                    .border(1.dp, Color(0x20FFFFFF), RoundedCornerShape(12.dp))
-                    .padding(2.dp)
+                    .weight(1f)
+                    .clip(RoundedCornerShape(10.dp))
+                    .then(
+                        if (viewMode == 0) Modifier.background(Brush.horizontalGradient(listOf(PhonePeLightPurple, PhonePePurple)))
+                        else Modifier.background(Color.Transparent)
+                    )
+                    .clickable { viewMode = 0 }
+                    .padding(vertical = 10.dp)
+                    .testTag("runway_tab_html"),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(if (viewMode == 0) PhonePePurple else Color.Transparent)
-                        .clickable { viewMode = 0 }
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                        .testTag("runway_tab_html")
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = if (viewMode == 0) Color.White else TextMuted,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "HTML Studio",
+                        text = "Interactive HTML Studio",
                         fontFamily = HelveticaFontFamily,
-                        color = if (viewMode == 0) Color.White else TextMuted,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
+                        color = if (viewMode == 0) Color.White else TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = if (viewMode == 0) FontWeight.Bold else FontWeight.Medium
                     )
                 }
+            }
 
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(if (viewMode == 1) PhonePePurple else Color.Transparent)
-                        .clickable { viewMode = 1 }
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                        .testTag("runway_tab_native")
-                ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(10.dp))
+                    .then(
+                        if (viewMode == 1) Modifier.background(Brush.horizontalGradient(listOf(PhonePeLightPurple, PhonePePurple)))
+                        else Modifier.background(Color.Transparent)
+                    )
+                    .clickable { viewMode = 1 }
+                    .padding(vertical = 10.dp)
+                    .testTag("runway_tab_native"),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Insights,
+                        contentDescription = null,
+                        tint = if (viewMode == 1) Color.White else TextMuted,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Native XAI",
+                        text = "Native XAI Engine",
                         fontFamily = HelveticaFontFamily,
-                        color = if (viewMode == 1) Color.White else TextMuted,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
+                        color = if (viewMode == 1) Color.White else TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = if (viewMode == 1) FontWeight.Bold else FontWeight.Medium
                     )
                 }
             }

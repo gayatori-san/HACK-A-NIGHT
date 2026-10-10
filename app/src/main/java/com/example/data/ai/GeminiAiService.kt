@@ -4,6 +4,7 @@ import android.util.Base64
 import android.util.Log
 import com.example.BuildConfig
 import com.example.data.models.PatternAnalysisData
+import com.example.data.models.StatementAnalysisReport
 import com.example.data.models.TransactionItem
 import com.example.data.models.UserData
 import kotlinx.coroutines.Dispatchers
@@ -405,4 +406,131 @@ object GeminiAiService {
         }
         return@withContext defaultMsg
     }
+
+    /**
+     * Analyzes uploaded CSV/Excel transactions using Gemini API with few-shot psychological nudges,
+     * funny behavioral roasts, bankruptcy risk score, and compound dividend opportunity-cost calculations.
+     */
+    suspend fun analyzeUploadedStatement(
+        txns: List<TransactionItem>,
+        userData: UserData,
+        currentBalance: Double
+    ): StatementAnalysisReport = withContext(Dispatchers.IO) {
+        val totalSpent = kotlin.math.abs(txns.filter { it.amount < 0 }.sumOf { it.amount })
+        val impulseSpent = kotlin.math.abs(txns.filter { it.amount < 0 && (it.necessity == "Impulse Buy" || it.cat == "food" || it.cat == "shopping") }.sumOf { it.amount })
+        val dailyBurn = if (totalSpent > 0) (totalSpent / 7.0).coerceAtLeast(150.0) else 350.0
+        val daysRem = (currentBalance / dailyBurn).coerceIn(1.0, 60.0)
+        val bankruptcyRisk = ((1.0 - (daysRem / 30.0).coerceIn(0.0, 1.0)) * 100).toInt().coerceIn(15, 96)
+        
+        // 8% dividend yield and 14% 5-year CAGR compound index return
+        val annualDividend = (impulseSpent * 0.08).coerceAtLeast(120.0)
+        val wealthIn5Yrs = (impulseSpent * (1.14 * 1.14 * 1.14 * 1.14 * 1.14)).coerceAtLeast(500.0)
+
+        if (isApiKeyValid() && txns.isNotEmpty()) {
+            try {
+                val apiKey = BuildConfig.GEMINI_API_KEY
+                val topTxns = txns.take(12).map {
+                    JSONObject().apply {
+                        put("merchant", it.name)
+                        put("amount", it.amount)
+                        put("category", it.cat)
+                    }
+                }
+                val sampleArr = JSONArray(topTxns)
+
+                val prompt = """
+                    You are a witty, psychologically shrewd financial behavior coach for a smart modern user (PhonePe UPI / India user).
+                    Goal: ${userData.goal}, Weakness: ${userData.weakness}.
+                    Recent uploaded statement transactions: $sampleArr.
+                    Total spent: ₹$totalSpent, Impulse leakage: ₹$impulseSpent, Projected runway: ${"%.1f".format(daysRem)} days.
+                    
+                    Return a JSON object with:
+                    1. "funnyRoast": A hilarious, brutally honest 1-2 sentence roast roasting their baseless purchases (like late night junk food, instant delivery convenience addiction, impulsive shopping).
+                    2. "psychologicalNudge": A strong psychological deterrent advice that psychologically drives the user away from making baseless purchases tomorrow, referencing how if this ₹${impulseSpent.toInt()} was invested into high-yield dividend stocks / Nifty 50, it would generate passive dividends every single year instead of becoming disposable calories or clutter.
+                    3. "topLeakage": The single biggest category leaking cash (e.g. "Late Night Food Delivery", "Impulse E-Commerce").
+                    
+                    JSON format ONLY:
+                    {
+                      "funnyRoast": "...",
+                      "psychologicalNudge": "...",
+                      "topLeakage": "..."
+                    }
+                """.trimIndent()
+
+                val requestJson = JSONObject().apply {
+                    val contents = JSONArray()
+                    val contentObj = JSONObject()
+                    val parts = JSONArray().apply { put(JSONObject().apply { put("text", prompt) }) }
+                    contentObj.put("parts", parts)
+                    contents.put(contentObj)
+                    put("contents", contents)
+                    put("generationConfig", JSONObject().apply { put("responseMimeType", "application/json") })
+                }
+
+                val mediaType = "application/json; charset=utf-8".toMediaType()
+                val body = requestJson.toString().toRequestBody(mediaType)
+                val request = Request.Builder()
+                    .url("$BASE_URL/$MODEL_NAME:generateContent?key=$apiKey")
+                    .post(body)
+                    .build()
+
+                val response = client.newCall(request).execute()
+                val responseBody = response.body?.string()
+                if (response.isSuccessful && !responseBody.isNullOrBlank()) {
+                    val root = JSONObject(responseBody)
+                    val text = root.getJSONArray("candidates")
+                        .getJSONObject(0)
+                        .getJSONObject("content")
+                        .getJSONArray("parts")
+                        .getJSONObject(0)
+                        .getString("text")
+                    val cleanJson = text.replace("```json", "").replace("```", "").trim()
+                    val obj = JSONObject(cleanJson)
+                    val roast = obj.optString("funnyRoast", "")
+                    val nudge = obj.optString("psychologicalNudge", "")
+                    val leakage = obj.optString("topLeakage", "Discretionary Impulse")
+
+                    if (roast.isNotBlank() && nudge.isNotBlank()) {
+                        return@withContext StatementAnalysisReport(
+                            title = "AI Behavioral Statement Audit",
+                            bankruptcyRiskPercent = bankruptcyRisk,
+                            daysRemaining = daysRem,
+                            funnyRoast = roast,
+                            psychologicalNudge = nudge,
+                            totalWastedOnImpulse = impulseSpent,
+                            projectedDividendsYearly = annualDividend,
+                            projectedWealth5Yrs = wealthIn5Yrs,
+                            topLeakageCategory = leakage,
+                            monthlyBurn = dailyBurn * 30
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Uploaded statement analysis error: ${e.message}", e)
+            }
+        }
+
+        // High quality offline fallback with psychological framing
+        val fallbackRoast = if (impulseSpent > 1000) {
+            "You swiped ₹${impulseSpent.toInt()} on impulse deliveries! Your stomach got instant gratification while your bank balance is literally filing for chapters of bankruptcy."
+        } else {
+            "Your statement has minor micro-leaks. A ₹400 snack here and a delivery fee there, and suddenly your investment portfolio is in tears."
+        }
+
+        val fallbackNudge = "Psychological Rule: If you delayed this ₹${impulseSpent.toInt()} by 72 hours and bought Nifty 50 dividend shares, you'd collect ~₹${annualDividend.toInt()} passive payout every year forever without lifting a finger. Stop trading your future freedom for instant convenience!"
+
+        return@withContext StatementAnalysisReport(
+            title = "Runway XAI Statement Audit",
+            bankruptcyRiskPercent = bankruptcyRisk,
+            daysRemaining = daysRem,
+            funnyRoast = fallbackRoast,
+            psychologicalNudge = fallbackNudge,
+            totalWastedOnImpulse = impulseSpent,
+            projectedDividendsYearly = annualDividend,
+            projectedWealth5Yrs = wealthIn5Yrs,
+            topLeakageCategory = if (userData.weakness.isNotBlank()) userData.weakness else "Dining & Delivery",
+            monthlyBurn = dailyBurn * 30
+        )
+    }
 }
+
